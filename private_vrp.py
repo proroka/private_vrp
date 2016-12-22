@@ -7,17 +7,18 @@ import networkx as nx
 import scipy.optimize as opt
 import utilities
 
-verbose = True
+verbose = False
 plot_on = False
 set_seed = True
 
 
 # Global settings
 vehicle_density = 0.2
-grid_size = 4
+grid_size = 80
 num_nodes = grid_size**2
 num_vehicles = int(num_nodes * vehicle_density)
 num_passengers = num_vehicles
+noise = 2.0
 
 
 # Load graph
@@ -41,7 +42,7 @@ vehicle_node_init = np.random.choice(np.arange(num_nodes), size=num_vehicles, re
 passenger_node_init = np.random.choice(np.arange(num_nodes), size=num_passengers, replace=False)
 
 # Add noise to vehicle initial node positions
-vehicle_node_init_noisy = utilities.add_noise(vehicle_node_init, grid_size)
+vehicle_node_init_noisy = utilities.add_noise(graph, vehicle_node_init, noise, grid_size)
 
 if verbose:
     print "Vehicles, init: ", vehicle_node_init
@@ -77,16 +78,21 @@ for i in range(num_vehicles):
         allocation_cost_noisy[i,j] = all_paths[graph.nodes()[passenger_node_init[j]]]
 # Find sub-optimal allocation (Munkres algorithm)
 row_ind_noisy, col_ind_noisy = opt.linear_sum_assignment(allocation_cost_noisy)
-
+# Cost of noisy allocation (should be hgher than opt.)
+final_cost = allocation_cost[row_ind_noisy, col_ind_noisy].sum()
+vehicle_node_final_noisy = col_ind_noisy
+print "Total allocation cost, noisy: ", final_cost
 
 
 # Distribution of waiting times
 opt_waiting_times = allocation_cost[row_ind, col_ind]
-plt.hist(opt_waiting_times, bins=30)
-plt.show()
+plt.figure()
+plt.hist(opt_waiting_times, bins=20, color='green')
 
 subopt_waiting_times = allocation_cost[row_ind_noisy, col_ind_noisy]
-plt.hist(subopt_waiting_times, bins=30)
+plt.figure()
+plt.hist(subopt_waiting_times, bins=30, color='red')
+
 plt.show()
 
 

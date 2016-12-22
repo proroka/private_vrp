@@ -27,19 +27,19 @@ graph = nx.grid_2d_graph(grid_size, grid_size, periodic=False, create_using=None
 # Initialization
 if set_seed: 
     np.random.seed(1234)
-vehicle_node_init = np.random.choice(np.arange(num_nodes), size=num_vehicles, replace=False)
-vehicle_node_init_b = np.arange(num_nodes)
+#vehicle_node_init = np.random.choice(np.arange(num_nodes), size=num_vehicles, replace=False)
+vehicle_node_init = np.arange(num_nodes)
+
+
 
 noise = 2.0
 
 # Add noise to vehicle initial node positions
 vehicle_node_init_noisy = utilities.add_noise(graph, vehicle_node_init, noise, grid_size)
 
-
+print "--------"
 
 print "Original nodes:\n", vehicle_node_init
-print "Original nodes:\n", vehicle_node_init_b
-
 print "Noisy nodes:\n", vehicle_node_init_noisy
 
 
