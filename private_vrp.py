@@ -16,11 +16,13 @@ num_passengers = num_vehicles
 
 # Load graph
 graph = nx.grid_2d_graph(grid_size, grid_size, periodic=False, create_using=None)
+graph = nx.watts_strogatz_graph(num_nodes,3,0.1)
+
 print "Number of nodes in graph: " , nx.number_of_nodes(graph)
 print nx.info(graph)
 
-print graph.nodes()
-print graph.edges()
+print "Nodes: ", graph.nodes()
+print "Edges: ", graph.edges()
 
 #print nx.all_neighbors(graph,0)
 #nx.draw(graph)
@@ -32,8 +34,8 @@ print graph.edges()
 vehicle_node_init = np.random.choice(np.arange(num_nodes), size=num_vehicles, replace=False)
 passenger_node_init = np.random.choice(np.arange(num_nodes), size=num_passengers, replace=False)
 
-print vehicle_node_init
-print passenger_node_init
+print "Vehicles, init: ", vehicle_node_init
+print "Passengers:     ", passenger_node_init
 
 
 sp = nx.shortest_path(graph, source=graph.nodes()[0], target=graph.nodes()[1])
