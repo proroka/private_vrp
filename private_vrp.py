@@ -11,7 +11,7 @@ plot_on = True
 
 
 # Global settings
-grid_size = 3
+grid_size = 5
 num_nodes = grid_size**2
 num_vehicles = 4
 num_passengers = num_vehicles
@@ -28,7 +28,10 @@ print "Nodes: ", graph.nodes()
 print "Edges: ", graph.edges()
 
 if plot_on:
-	nx.draw(graph)
+	#x.draw(graph)
+	pos = dict(zip(graph.nodes(), graph.nodes()))
+	nx.draw_networkx(graph, pos=pos, with_labels=False, node_size=250, node_color='lightblue')
+
 	plt.show()
 
 
