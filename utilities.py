@@ -1,22 +1,45 @@
 
 
 import numpy as np
+import networkx as nx
+import scipy.optimize as opt
+import scipy.special as spc
+
 
 # Add noise to node positions, return node on graph closest to noisy position; clip to fit grid
 # Nodes:  [(0, 1), (1, 2), ... ]
-def add_noise(graph, nodes_ind, noise, grid_size):
 
-    
+def sample_polar_laplace(epsilon, size):
+    # Sample from 2D Laplace distribution
+    theta = np.random.uniform(0, 2 * np.pi, size=size)
+    aux = np.random.uniform(0,1, size=size)
+
+    # Compute -1 branch of Lambbert function
+    W = spc.lambertw((aux-1)/np.e, -1)
+    radius = np.real(-(1/epsilon) * (W +1))
+
+    return radius, theta
+
+
+def polar2euclid(radius, theta):
+    aux = np.empty((radius.shape[0], 2))
+    aux[:,0] = np.cos(theta)
+    aux[:,1] = np.sin(theta)
+    return aux * np.expand_dims(radius, axis=1)
+
+
+def add_noise(graph, nodes_ind, epsilon, grid_size, cell_size):
     # Convert to array
     node_locations = index_to_location(graph, nodes_ind) #np.array(graph.nodes())[nodes_ind]
-    # Add noise
-    noise_vector = np.random.normal(loc=0, scale=noise, size=node_locations.shape)
+    # Add Gaussian noise
+    # noise_vector = np.random.normal(loc=0, scale=noise, size=node_locations.shape)
+    # Add Laplace noise
+    radius, theta = sample_polar_laplace(epsilon, node_locations.shape[0])
+    noise_vector = polar2euclid(radius, theta)
+    
     node_locations_noisy = (np.around(node_locations + noise_vector))
     node_locations_noisy = node_locations_noisy.astype(np.int32)
     node_locations_noisy = np.clip(node_locations_noisy, 0, grid_size-1)
-
-    #print "Vehicle locations, original:\n ", node_locations
-    #print "Vehicle locations, noisy:\n ", node_locations_noisy
 
     return location_to_index(graph, node_locations_noisy)
 
@@ -37,3 +60,19 @@ def location_to_index(graph, locations):
     a = [graph_dict[tuple(i)] for i in locations]
 
     return np.array(a)
+
+
+
+def get_allocation_cost(graph, num_vehicles, num_passengers, vehicle_node_init, passenger_node_init):
+    verbose = False
+    allocation_cost = np.zeros((num_vehicles, num_passengers))
+    for i in range(num_vehicles):
+        all_paths = nx.shortest_path_length(graph, source=graph.nodes()[vehicle_node_init[i]], weight=None)
+        for j in range(num_passengers):
+            # Compute cost of shortest path for all possible allocations
+            allocation_cost[i,j] = all_paths[graph.nodes()[passenger_node_init[j]]]
+
+    return allocation_cost
+
+
+
