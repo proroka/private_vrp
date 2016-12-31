@@ -15,7 +15,7 @@ set_seed = True
 # Global settings
 vehicle_density = 0.2
 grid_size = 20
-cell_size = 10 # meters
+cell_size = 0.1 # meters
 num_nodes = grid_size**2
 num_vehicles = int(num_nodes * vehicle_density)
 num_passengers = num_vehicles
