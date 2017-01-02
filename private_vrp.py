@@ -5,7 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 import scipy.optimize as opt
+# My modules
 import utilities
+import utilities_vrp
 
 verbose = False
 plot_on = True
@@ -36,48 +38,51 @@ if plot_on:
     plt.show()
 
 
-# Initialization
+# indialization
 if set_seed: 
     np.random.seed(1234)
-vehicle_node_init = np.random.choice(np.arange(num_nodes), size=num_vehicles, replace=False)
-passenger_node_init = np.random.choice(np.arange(num_nodes), size=num_passengers, replace=False)
+vehicle_node_ind = np.random.choice(np.arange(num_nodes), size=num_vehicles, replace=False)
+passenger_node_ind = np.random.choice(np.arange(num_nodes), size=num_passengers, replace=False)
 
-# Add noise to vehicle initial node positions
-vehicle_node_init_noisy = utilities.add_noise(graph, vehicle_node_init, epsilon, grid_size, cell_size)
+# Add noise to vehicle indial node positions
+vehicle_node_ind_noisy = utilities.add_noise(graph, vehicle_node_ind, epsilon, grid_size, cell_size)
 
 if verbose:
-    print "Vehicles, init: ", vehicle_node_init
-    print "Passengers:     ", passenger_node_init
+    print "Vehicles, init: ", vehicle_node_ind
+    print "Passengers:     ", passenger_node_ind
 
 
 
 # Compute optimal allocation
-allocation_cost = utilities.get_allocation_cost(graph, num_vehicles, num_passengers, vehicle_node_init, passenger_node_init)
-row_ind, col_ind = opt.linear_sum_assignment(allocation_cost)
-final_cost = allocation_cost[row_ind, col_ind].sum()
-vehicle_node_final = col_ind
-print "Total allocation cost, opt: ", final_cost
+opt_waiting_times = utilities_vrp.run_vrp_allocation(graph, vehicle_node_ind, passenger_node_ind)
+# allocation_cost = utilities.get_allocation_cost(graph, num_vehicles, num_passengers, vehicle_node_ind, passenger_node_ind)
+# row_ind, col_ind = opt.linear_sum_assignment(allocation_cost)
+# final_cost = allocation_cost[row_ind, col_ind].sum()
+# vehicle_node_final = col_ind
+# print "Total allocation cost, opt: ", final_cost
 
 # Compute noisy allocation
-allocation_cost_noisy = utilities.get_allocation_cost(graph, num_vehicles, num_passengers, vehicle_node_init_noisy, passenger_node_init)
-# Find sub-optimal allocation (Munkres algorithm)
-row_ind_noisy, col_ind_noisy = opt.linear_sum_assignment(allocation_cost_noisy)
-# Cost of noisy allocation (should be hgher than opt.)
-final_cost_noisy = allocation_cost[row_ind_noisy, col_ind_noisy].sum()
-vehicle_node_final_noisy = col_ind_noisy
-print "Total allocation cost, noisy: ", final_cost_noisy
+subopt_waiting_times = utilities_vrp.run_vrp_allocation(graph, vehicle_node_ind_noisy, passenger_node_ind)
+# allocation_cost_noisy = utilities.get_allocation_cost(graph, num_vehicles, num_passengers, vehicle_node_ind_noisy, passenger_node_ind)
+# # Find sub-optimal allocation (Munkres algorithm)
+# row_ind_noisy, col_ind_noisy = opt.linear_sum_assignment(allocation_cost_noisy)
+# # Cost of noisy allocation (should be hgher than opt.)
+# final_cost_noisy = allocation_cost[row_ind_noisy, col_ind_noisy].sum()
+# vehicle_node_final_noisy = col_ind_noisy
+# print "Total allocation cost, noisy: ", final_cost_noisy
 
 # Random allocation
-row_ind_rand = np.random.choice(np.arange(num_vehicles), size=num_vehicles, replace=False)
-col_ind_rand = np.random.choice(np.arange(num_vehicles), size=num_vehicles, replace=False)
-vehicle_node_final_rand = col_ind_rand
-final_cost_rand = allocation_cost[row_ind_rand, col_ind_rand].sum()
-print "Total allocation cost, rand: ", final_cost_rand
+rand_waiting_times = utilities_vrp.run_rand_allocation(graph, vehicle_node_ind, passenger_node_ind)
+# row_ind_rand = np.random.choice(np.arange(num_vehicles), size=num_vehicles, replace=False)
+# col_ind_rand = np.random.choice(np.arange(num_vehicles), size=num_vehicles, replace=False)
+# vehicle_node_final_rand = col_ind_rand
+# final_cost_rand = allocation_cost[row_ind_rand, col_ind_rand].sum()
+# print "Total allocation cost, rand: ", final_cost_rand
 
 # Distribution of waiting times
-rand_waiting_times = allocation_cost[row_ind_rand, col_ind_rand]
-opt_waiting_times = allocation_cost[row_ind, col_ind]
-subopt_waiting_times = allocation_cost[row_ind_noisy, col_ind_noisy]
+#rand_waiting_times = allocation_cost[row_ind_rand, col_ind_rand]
+#opt_waiting_times = allocation_cost[row_ind, col_ind]
+#subopt_waiting_times = allocation_cost[row_ind_noisy, col_ind_noisy]
 
 max_value = np.max(np.stack([rand_waiting_times, opt_waiting_times, subopt_waiting_times]))
 
