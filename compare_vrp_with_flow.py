@@ -18,7 +18,7 @@ save_fig = True
 grid_size = 30
 cell_size = 10 # meters
 num_nodes = grid_size**2
-epsilon = .2
+epsilon = .1
 vehicle_density = 0.2
 num_vehicles = int(num_nodes * vehicle_density)
 num_passengers = num_vehicles
@@ -39,12 +39,13 @@ vehicle_nodes = utilities.index_to_location(graph, vehicle_node_ind)
 passenger_nodes = utilities.index_to_location(graph, passenger_node_ind)
 
 # Run vehicles on flow field
-alpha = 10. # the higher, the more deterministic (greedy) the flow
+alpha = 0.7 # the higher, the more deterministic (greedy) the flow
+deterministic = False # choose edge leading to nearest passenger (greedy strategy)
 field = utilities_field.create_probability_field(graph, passenger_node_ind, alpha)
 max_force = utilities_field.max_field_force(field)
 if plot_on:
     utilities_field.plot_field(field, max_force, graph, cell_size, passenger_node_ind)
-waiting_time_flow = utilities_field.run_vehicle_flow(vehicle_nodes, passenger_nodes, graph, field, alpha) 
+waiting_time_flow = utilities_field.run_vehicle_flow(vehicle_nodes, passenger_nodes, graph, field, alpha, deterministic) 
 
 
 # Run VRP

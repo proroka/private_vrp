@@ -50,7 +50,7 @@ def create_probability_field(graph, passenger_node_indeces, alpha=1.):
             forces += headings * (1./float(length))
 
         # Scale locally
-        ind = np.where(forces>0)
+        ind = forces>0
         forces[ind] = np.power(forces[ind], alpha)
         if np.max(forces) > 0:
             forces /= np.sum(forces)
@@ -94,7 +94,7 @@ def plot_field(field, max_force, graph, cell_size, passenger_node_ind):
     plt.axis('equal')
     plt.show()
 
-def run_vehicle_flow(vehicle_nodes, passenger_nodes, graph, field, alpha):
+def run_vehicle_flow(vehicle_nodes, passenger_nodes, graph, field, alpha, deterministic=False):
     steps = 0
     waiting_time = []
     occupied_vehicle = np.zeros(len(vehicle_nodes))
@@ -111,6 +111,10 @@ def run_vehicle_flow(vehicle_nodes, passenger_nodes, graph, field, alpha):
                 continue
             pvalues = field[tuple(vnode)]
             heading = np.random.choice(range(4), p=pvalues)
+
+            if deterministic: 
+                heading_t = np.arange(4)[np.max(pvalues)==pvalues]
+                heading = np.random.choice(heading_t)
             # Add the offset direction to vehicle pos
             vehicle_nodes[i,:] = vnode + direction_offset[heading]
             vnode_t = tuple(vehicle_nodes[i,:])
