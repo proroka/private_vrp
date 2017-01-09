@@ -1,6 +1,8 @@
 *.pyc
 .DS_Store
-./figures/*
-./data/*
-./data
-./figures
+./grid_graphs/figures/*
+./grid_graphs/data/*
+./grid_graphs/data
+./grid_graphs/figures
+./general_graphs/figures
+./general_graphs/data
