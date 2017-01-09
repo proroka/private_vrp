@@ -13,10 +13,10 @@ set_seed = True
 
 # Global settings
 grid_size = 10
-cell_size = 10 # meters
+cell_size = 100 # meters
 num_nodes = grid_size**2
 num_samples = 1000 # number of random samples to be taken
-epsilon = .2
+epsilon = .02
 
 # Load graph
 graph = nx.grid_2d_graph(grid_size, grid_size, periodic=False, create_using=None)

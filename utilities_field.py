@@ -65,34 +65,56 @@ def max_field_force(field):
 
 
 # Plot graph of field with passengers marked
-def plot_field(field, max_force, graph, cell_size, passenger_node_ind):
+def plot_field(field, max_force, graph, cell_size, passenger_node_ind, save_fig=False, deterministic=False):
+    plt.figure(figsize=(6,6), frameon=False)
+    #fig, ax = plt.subplots()
     pos = dict(zip(graph.nodes(), np.array(graph.nodes())*cell_size)) # Only works for grid graph
     #nx.draw_networkx(graph, pos=pos, with_labels=False, node_size=250, node_color='lightblue')
     passenger_nodes = utilities.index_to_location(graph, passenger_node_ind)
     plt.scatter(passenger_nodes[:,0]*cell_size, passenger_nodes[:,1]*cell_size, color='red',s=400)
 
-    s = cell_size / max_force / 2.
+    s = cell_size / (max_force*.90) / 2.
     hw = 2
     hl = 4
     for n in graph.nodes():
+
         node = np.array(n)
         x = node[0] * cell_size
         y = node[1] * cell_size
-        # North
-        if field[n][NORTH]:
-            plt.quiver(x, y, 0, field[n][NORTH] * s, scale=1., units='xy', headwidth=hw, headlength=hl)
-        # South
-        if field[n][SOUTH]:
-            plt.quiver(x, y, 0, -field[n][SOUTH] * s, scale=1., units='xy', headwidth=hw, headlength=hl)
-        # East
-        if field[n][EAST]:
-            plt.quiver(x, y, field[n][EAST] * s, 0, scale=1., units='xy', headwidth=hw, headlength=hl)
-        # West
-        if field[n][WEST]:
-            plt.quiver(x, y, -field[n][WEST] * s, 0, scale=1., units='xy', headwidth=hw, headlength=hl)
+        plt.scatter(x, y, color='black',s=40)
+
+        # Plot a single quiver
+        if deterministic: 
+            pvalues = field[tuple(n)]
+            heading = np.random.choice(range(4), p=pvalues)
+            heading_t = np.arange(4)[np.max(pvalues)==pvalues]
+            heading = np.random.choice(heading_t)
+            d = direction_offset[heading]
+            plt.quiver(x, y, d[0]*s, d[1]*s, scale=1., units='xy', headwidth=hw, headlength=hl)
+
+        # Plot all quivers
+        else:
+            # North
+            if field[n][NORTH]:
+                plt.quiver(x, y, 0, field[n][NORTH] * s, scale=1., units='xy', headwidth=hw, headlength=hl)
+            # South
+            if field[n][SOUTH]:
+                plt.quiver(x, y, 0, -field[n][SOUTH] * s, scale=1., units='xy', headwidth=hw, headlength=hl)
+            # East
+            if field[n][EAST]:
+                plt.quiver(x, y, field[n][EAST] * s, 0, scale=1., units='xy', headwidth=hw, headlength=hl)
+            # West
+            if field[n][WEST]:
+                plt.quiver(x, y, -field[n][WEST] * s, 0, scale=1., units='xy', headwidth=hw, headlength=hl)
+
+
 
     plt.axis('equal')
+    plt.axis('off')
     plt.show()
+    if save_fig:
+        plt.savefig('figures/quiver_map.png', format='png', transparent=True)
+
 
 def run_vehicle_flow(vehicle_nodes, passenger_nodes, graph, field, alpha, deterministic=False):
     steps = 0
@@ -130,7 +152,7 @@ def run_vehicle_flow(vehicle_nodes, passenger_nodes, graph, field, alpha, determ
                 field = create_probability_field(graph, passenger_node_ind, alpha)
                 max_force = max_field_force(field)
                 
-    return waiting_time
+    return np.array(waiting_time)
 
 
 
