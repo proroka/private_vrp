@@ -12,12 +12,13 @@ import utilities_vrp
 
 set_seed = True
 save_fig = True
+save_data = False
 plot_field = False
 run_flow = True
-run_vrp = False
+run_vrp = True
 
 # Global settings
-grid_size = 40 # larger than 50 takes long to compute on mac
+grid_size = 5 # larger than 50 takes long to compute on mac
 cell_size = 100. # meters
 vehicle_speed = 10.
 num_nodes = grid_size**2
@@ -58,7 +59,8 @@ if run_flow:
     waiting_time_flow = utilities_field.run_vehicle_flow(vehicle_nodes, 
         passenger_nodes, graph, field, alpha_flow, deterministic_flow) * cell_size / vehicle_speed
     perc_flow = [np.percentile(waiting_time_flow, 50), np.percentile(waiting_time_flow, 95)]
-    pickle.dump(waiting_time_flow, open('data/waiting_time_flow.p','wb'))
+    if save_data:
+        pickle.dump(waiting_time_flow, open('data/waiting_time_flow.p','wb'))
 
 # Run VRP
 vehicle_node_ind_noisy = utilities.add_noise(graph, vehicle_node_ind, epsilon, grid_size, cell_size)
@@ -79,10 +81,11 @@ if run_vrp:
     perc_vrpsub2 = [np.percentile(waiting_time_vrpsub2, 50), np.percentile(waiting_time_vrpsub2, 95)]
     perc_vrprand = [np.percentile(waiting_time_vrprand, 50), np.percentile(waiting_time_vrprand, 95)]
 
-    pickle.dump(waiting_time_vrpopt, open('data/waiting_time_vrpopt.p','wb'))
-    pickle.dump(waiting_time_vrpsub, open('data/waiting_time_vrpsub.p','wb'))
-    pickle.dump(waiting_time_vrpsub2, open('data/waiting_time_vrpsub2.p','wb'))
-    pickle.dump(waiting_time_vrprand, open('data/waiting_time_vrprand.p','wb'))
+    if save_data:
+        pickle.dump(waiting_time_vrpopt, open('data/waiting_time_vrpopt.p','wb'))
+        pickle.dump(waiting_time_vrpsub, open('data/waiting_time_vrpsub.p','wb'))
+        pickle.dump(waiting_time_vrpsub2, open('data/waiting_time_vrpsub2.p','wb'))
+        pickle.dump(waiting_time_vrprand, open('data/waiting_time_vrprand.p','wb'))
 
 
 
@@ -114,8 +117,7 @@ def plot_waiting_time_distr(waiting_time, percentile, bins, max_value, filename,
 num_bins = 25
 bins = np.linspace(-0.5, max_value+0.5, num_bins+1)
 
-# Hack the max value
-max_value = 750
+
 # Flow
 if run_flow:
     plot_waiting_time_distr(waiting_time_flow, perc_flow, bins, max_value, 'figures/times_flow.png', save_fig=save_fig)

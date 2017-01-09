@@ -1,5 +1,4 @@
-
-
+# Modules
 import numpy as np
 import networkx as nx
 import scipy.optimize as opt
@@ -63,17 +62,6 @@ def location_to_index(graph, locations):
     return np.array(a)
 
 
-
-def get_allocation_cost(graph, num_vehicles, num_passengers, vehicle_node_init, passenger_node_init):
-    verbose = False
-    allocation_cost = np.zeros((num_vehicles, num_passengers))
-    for i in range(num_vehicles):
-        all_paths = nx.shortest_path_length(graph, source=graph.nodes()[vehicle_node_init[i]], weight=None)
-        for j in range(num_passengers):
-            # Compute cost of shortest path for all possible allocations
-            allocation_cost[i,j] = all_paths[graph.nodes()[passenger_node_init[j]]]
-
-    return allocation_cost
 
 
 

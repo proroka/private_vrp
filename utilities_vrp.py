@@ -6,10 +6,23 @@ import scipy.optimize as opt
 import utilities
 
 
+
+
+def get_allocation_cost(graph, num_vehicles, num_passengers, vehicle_node_init, passenger_node_init):
+    verbose = False
+    allocation_cost = np.zeros((num_vehicles, num_passengers))
+    for i in range(num_vehicles):
+        all_paths = nx.shortest_path_length(graph, source=graph.nodes()[vehicle_node_init[i]], weight=None)
+        for j in range(num_passengers):
+            # Compute cost of shortest path for all possible allocations
+            allocation_cost[i,j] = all_paths[graph.nodes()[passenger_node_init[j]]]
+
+    return allocation_cost
+
 def run_vrp_allocation(graph, vehicle_node_ind, passenger_node_ind):
     num_vehicles = len(vehicle_node_ind)
     num_passengers = len(passenger_node_ind)
-    allocation_cost = utilities.get_allocation_cost(graph, num_vehicles, num_passengers, vehicle_node_ind, passenger_node_ind)
+    allocation_cost = get_allocation_cost(graph, num_vehicles, num_passengers, vehicle_node_ind, passenger_node_ind)
     row_ind, col_ind = opt.linear_sum_assignment(allocation_cost)
     final_cost = allocation_cost[row_ind, col_ind].sum()
     vehicle_node_final = col_ind
@@ -20,7 +33,7 @@ def run_vrp_allocation(graph, vehicle_node_ind, passenger_node_ind):
 def run_rand_allocation(graph, vehicle_node_ind, passenger_node_ind):
     num_vehicles = len(vehicle_node_ind)
     num_passengers = len(passenger_node_ind)
-    allocation_cost = utilities.get_allocation_cost(graph, num_vehicles, num_passengers, vehicle_node_ind, passenger_node_ind)
+    allocation_cost = get_allocation_cost(graph, num_vehicles, num_passengers, vehicle_node_ind, passenger_node_ind)
     row_ind_rand = np.random.choice(np.arange(num_vehicles), size=num_vehicles, replace=False)
     col_ind_rand = np.random.choice(np.arange(num_vehicles), size=num_vehicles, replace=False)
     vehicle_node_final_rand = col_ind_rand
