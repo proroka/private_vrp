@@ -67,30 +67,10 @@ if plot_graph:
 aux = np.random.randint(num_nodes) # choose a random node 
 point_indeces = np.ones(num_samples) * aux
 
-point_locations = utilities.index_to_location(point_indeces, index_to_pos_dict)
+# Add noise, get indeces
+noisy_point_indeces, noisy_point_locations = utilities.add_noise(point_indeces, index_to_pos_dict, epsilon)
 
-
-# Add Laplace noise to locations
-radius, theta = utilities.sample_polar_laplace(epsilon, point_locations.shape[0])
-noise_vector = utilities.polar2euclid(radius, theta)
-# Noisy positions
-noisy_point_locations = point_locations + noise_vector
-
-if verbose:
-    print "Original point: ", point_locations[0,:]
-    print "Noisy points: ", noisy_point_locations
-
-# Round to nearest node, and clip to fit grid
-nearest = np.zeros(noisy_point_locations.shape[0])
-for i in range(noisy_point_locations.shape[0]):
-    min_dist = 100000000.
-    for j in range(node_pos.shape[0]):
-        dist_ij = np.linalg.norm((noisy_point_locations[i,:]-node_pos[j,:]))
-        if dist_ij < min_dist:
-            min_dist = dist_ij
-            nearest[i] = j
-
-noisy_point_indeces = nearest
+print "Indeces: ", noisy_point_indeces
 
 # Count occurences of grid locations
 count = dict()
@@ -112,7 +92,8 @@ nx.draw(graph, pos=index_to_pos_dict,node_size=50, node_color='lightblue') #,nod
 
 # Plot noisy points
 plt.scatter(noisy_point_locations[:,0], noisy_point_locations[:,1])
-plt.scatter(point_locations[0,0], point_locations[0,1], color='green', zorder=100)
+point = utilities.index_to_location(np.array([aux]), index_to_pos_dict)
+plt.scatter(point[0,0], point[0,1], color='green', zorder=100)
 plt.scatter(noisy_points_mapped_pos[:,0], noisy_points_mapped_pos[:,1],color='red',s=noisy_points_size)
 
 plt.axis('equal')

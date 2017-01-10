@@ -148,6 +148,13 @@ def FromLatLong(lat_long):
 def GetNodePosition(graph, node_id):
   return np.array([graph.node[node_id]['x'], graph.node[node_id]['y']])
 
+def GetNodePositions(graph, node_ids):
+  pos = np.zeros((len(node_ids),2))
+  for i in range(len(node_ids)):
+    pos[i,:] = [graph.node[node_ids[i]]['x'], graph.node[node_ids[i]]['y']]
+
+  return pos
+
 
 # Modified from https://github.com/gboeing/osmnx/blob/master/osmnx/plot.py.
 def PlotRoute(G, route, ax):

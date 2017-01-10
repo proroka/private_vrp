@@ -17,9 +17,9 @@ verbose = False
 plot_graph = False
 
 # Global settings
-num_nodes = 6
+num_nodes = 30
 vehicle_density = 0.2
-passenger_density = 0.4
+passenger_density = 0.2
 
 num_vehicles = int(num_nodes * vehicle_density)
 num_passengers = int(num_nodes * passenger_density)
@@ -77,26 +77,24 @@ print "Number of passengers: ", num_passengers
 # Initialization
 vehicle_node_ind = np.random.choice(np.arange(num_nodes), size=num_vehicles, replace=False)
 passenger_node_ind = np.random.choice(np.arange(num_nodes), size=num_passengers, replace=False)
-# vehicle_nodes = utilities.index_to_location(graph, vehicle_node_ind)
-# passenger_nodes = utilities.index_to_location(graph, passenger_node_ind)
 
 # Compute noisy vehicle indeces
-#vehicle_node_ind_noisy = utilities.add_noise(graph, vehicle_node_ind, epsilon, grid_size, cell_size)
+vehicle_node_ind_noisy, vehicle_node_pos_noisy = utilities.add_noise(vehicle_node_ind, index_to_pos_dict, epsilon)
 
 # Run VRP
 print 'Computing optimal VRP...'
 waiting_time_vrpopt = utilities_vrp.run_vrp_allocation(graph, vehicle_node_ind, passenger_node_ind)
 
+print 'Computing subopt. VRP...'
+waiting_time_vrpsub = utilities_vrp.run_vrp_allocation(graph, vehicle_node_ind_noisy, passenger_node_ind)
 
-# print 'Computing subopt. VRP...'
-# waiting_time_vrpsub = utilities_vrp.run_vrp_allocation(graph, vehicle_node_ind_noisy, passenger_node_ind) * cell_size / vehicle_speed
 # print 'Computing subopt. VRP no. 2...'
 # waiting_time_vrpsub2 = utilities_vrp.run_vrp_allocation(graph, vehicle_node_ind_noisy2, passenger_node_ind) * cell_size / vehicle_speed
 # print 'Computing random VRP...'
 # waiting_time_vrprand = utilities_vrp.run_rand_allocation(graph, vehicle_node_ind, passenger_node_ind) * cell_size / vehicle_speed
 
 perc_vrpopt = [np.percentile(waiting_time_vrpopt, 50), np.percentile(waiting_time_vrpopt, 95)]
-# perc_vrpsub = [np.percentile(waiting_time_vrpsub, 50), np.percentile(waiting_time_vrpsub, 95)]
+perc_vrpsub = [np.percentile(waiting_time_vrpsub, 50), np.percentile(waiting_time_vrpsub, 95)]
 # perc_vrpsub2 = [np.percentile(waiting_time_vrpsub2, 50), np.percentile(waiting_time_vrpsub2, 95)]
 # perc_vrprand = [np.percentile(waiting_time_vrprand, 50), np.percentile(waiting_time_vrprand, 95)]
 
@@ -138,8 +136,8 @@ bins = np.linspace(-0.5, max_value+0.5, num_bins+1)
 # # Optimal VRP
 plot_waiting_time_distr(waiting_time_vrpopt, perc_vrpopt, bins, 'figures/times_vrpopt.png', save_fig=save_fig, max_value=max_value)
 
-# # Subopt VRP
-# plot_waiting_time_distr(waiting_time_vrpsub, perc_vrpsub, bins, max_value, 'figures/times_vrpsub.png', save_fig=save_fig)
+# Subopt VRP
+plot_waiting_time_distr(waiting_time_vrpsub, perc_vrpsub, bins, 'figures/times_vrpsub.png', save_fig=save_fig, max_value=max_value)
 
 # # Subopt 2 VRP
 # plot_waiting_time_distr(waiting_time_vrpsub2, perc_vrpsub2, bins, max_value, 'figures/times_vrpsub2.png', save_fig=save_fig)

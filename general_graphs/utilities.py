@@ -28,20 +28,27 @@ def polar2euclid(radius, theta):
 
 
 # Add noise to all vehicle positions
-def add_noise(graph, nodes_ind, epsilon, grid_size, cell_size):
-    # Get all vehicle node locations
-    node_locations = index_to_location(graph, nodes_ind) #np.array(graph.nodes())[nodes_ind]
-    # Add Gaussian noise
-    # noise_vector = np.random.normal(loc=0, scale=noise, size=node_locations.shape)
-    # Add Laplace noise to all locations
-    radius, theta = sample_polar_laplace(epsilon, node_locations.shape[0])
-    noise_vector = polar2euclid(radius, theta)
-    # Scale to true grid size, round to nearest node, and clip to fit grid
-    node_locations_noisy = (np.around((node_locations * cell_size + noise_vector) / cell_size))
-    node_locations_noisy = node_locations_noisy.astype(np.int32)
-    node_locations_noisy = np.clip(node_locations_noisy, 0, grid_size-1)
+def add_noise(point_indeces, index_to_pos_dict, epsilon):
+  
+    point_locations = index_to_location(point_indeces, index_to_pos_dict)
+    node_pos = index_to_location(range(len(index_to_pos_dict)), index_to_pos_dict)
 
-    return location_to_index(graph, node_locations_noisy)
+    radius, theta = sample_polar_laplace(epsilon, point_locations.shape[0])
+    noise_vector = polar2euclid(radius, theta)
+    # Noisy positions
+    noisy_point_locations = point_locations + noise_vector
+
+    # Round to nearest node, and clip to fit grid
+    nearest = np.zeros(noisy_point_locations.shape[0],dtype=np.int32)
+    for i in range(noisy_point_locations.shape[0]):
+        min_dist = 100000000.
+        for j in range(node_pos.shape[0]):
+            dist_ij = np.linalg.norm((noisy_point_locations[i,:]-node_pos[j,:]))
+            if dist_ij < min_dist:
+                min_dist = dist_ij
+                nearest[i] = j
+    
+    return nearest, noisy_point_locations
 
 
 def index_to_location(indeces, index_to_pos_dict):
@@ -49,7 +56,7 @@ def index_to_location(indeces, index_to_pos_dict):
     #graph_dict = dict((k, v) for k, v in enumerate(graph.nodes()))
     #print graph_dict
     a = [index_to_pos_dict[i] for i in indeces]
-    
+
     return np.array(a)
 
 
