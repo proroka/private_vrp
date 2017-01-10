@@ -44,20 +44,21 @@ def add_noise(graph, nodes_ind, epsilon, grid_size, cell_size):
     return location_to_index(graph, node_locations_noisy)
 
 
-def index_to_location(graph, indeces):
+def index_to_location(indeces, index_to_pos_dict):
     # key: index, value: position of node
-    graph_dict = dict((k, v) for k, v in enumerate(graph.nodes()))
+    #graph_dict = dict((k, v) for k, v in enumerate(graph.nodes()))
     #print graph_dict
-    a = [graph_dict[i] for i in indeces]
+    a = [index_to_pos_dict[i] for i in indeces]
+    
     return np.array(a)
 
 
-def location_to_index(graph, locations):
+def location_to_index(graph, locations, pos_to_index_dict):
     # key: position of node, value: index
-    graph_dict = dict((v, k) for k, v in enumerate(graph.nodes()))
+    #graph_dict = dict((v, k) for k, v in enumerate(graph.nodes()))
     
     #print "Dict of graph:\n", graph_dict
-    a = [graph_dict[tuple(i)] for i in locations]
+    a = [pos_to_index_dict[tuple(i)] for i in locations]
 
     return np.array(a)
 
