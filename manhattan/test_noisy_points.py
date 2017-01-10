@@ -19,33 +19,26 @@ import utilities_manhattan as um
 
 # Add noise to positions
 def add_noise(point_locations, nearest_neighbor_searcher, epsilon):
+    # Noisy positions
     radius, theta = sample_polar_laplace(epsilon, point_locations.shape[0])
     noise_vector = polar2euclid(radius, theta)
-    # Noisy positions
     noisy_point_locations = point_locations + noise_vector
-
     # Find nearest node
-    nearest_nodes = np.zeros(noisy_point_locations.shape[0], dtype=np.int32)
-    for i in range(noisy_point_locations.shape[0]):
-        nearest_nodes[i], dist = nearest_neighbor_searcher.Search(noisy_point_locations[i])
-    
+    nearest_nodes, dist = nearest_neighbor_searcher.Search(noisy_point_locations)
+
     return nearest_nodes, noisy_point_locations
 
 # Add noise to node indeces
 def add_noise_to_ind(point_indeces, graph, nearest_neighbor_searcher, epsilon):
     # Get position from indeces
     point_locations = um.GetNodePositions(graph, point_indeces)
-    
+    # Noisy positions
     radius, theta = sample_polar_laplace(epsilon, point_locations.shape[0])
     noise_vector = polar2euclid(radius, theta)
-    # Noisy positions
     noisy_point_locations = point_locations + noise_vector
-
     # Find nearest node
-    nearest_nodes = np.zeros(noisy_point_locations.shape[0], dtype=np.int32)
-    for i in range(noisy_point_locations.shape[0]):
-        nearest_nodes[i], dist = nearest_neighbor_searcher.Search(noisy_point_locations[i])
-    
+    nearest_nodes, dist = nearest_neighbor_searcher.Search(noisy_point_locations)
+ 
     return nearest_nodes, noisy_point_locations
 
 # 
@@ -92,7 +85,7 @@ flatiron_node_xy = um.GetNodePosition(graph, flatiron_node)
 print 'Closest node to Flatiron is %d : %g [m] away' % (flatiron_node, distance)
 
 # Get noisy points and indeces
-epsilon = 0.05
+epsilon = 0.01
 num_samples = 100
 point_locations = np.ones((num_samples,2)) * flatiron_xy
 nearest_nodes, noisy_point_locations = add_noise(point_locations, nearest_neighbor_searcher, epsilon)
