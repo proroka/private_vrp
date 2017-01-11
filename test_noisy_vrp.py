@@ -16,8 +16,8 @@ import manhattan.data as manh_data
 
 #-------------------------------------
 # Global settings
-vehicle_density = 0.3
-passenger_density = 0.3
+vehicle_density = 0.1
+passenger_density = 0.1
 # Noise
 epsilon = 0.02
 
@@ -49,13 +49,41 @@ vehicle_node_ind_noisy, vehicle_pos_noisy = util_noise.add_noise(vehicle_node_po
 
 
 node_ind_noisy, prob, const = util_prob.compute_nearest_nodes(vehicle_pos_noisy[0,:], epsilon, nearest_neighbor_searcher, graph)
+# print 'Nodes indeces:', node_ind_noisy
+# print 'Probabilities:', prob
+# print 'Normalization const:', const
 
-print 'Nodes indeces:', node_ind_noisy
-print 'Probabilities:', prob
-print 'Normalization const:', const
+# Run VRP
+print 'Computing naive VRP...'
+waiting_time_vrpopt = util_vrp.run_vrp_allocation(route_lengths, vehicle_node_ind, passenger_node_ind)
+
+print 'Computing noisy VRP...'
+allocation_cost = util_prob.get_allocation_cost_noisy(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon,
+                                                      nearest_neighbor_searcher, graph)
+waiting_time_vrpprob = util_vrp.run_vrp(allocation_cost)
+
+
+# Plot
+print 'Plotting...'
+perc_vrpopt = [np.percentile(waiting_time_vrpopt, 50), np.percentile(waiting_time_vrpopt, 95)]
+perc_vrpprob = [np.percentile(waiting_time_vrpprob, 50), np.percentile(waiting_time_vrpprob, 95)]
 
 
 
+fig1 = plt.figure(figsize=(6,6), frameon=False)
+max_value = np.max(waiting_time_vrpopt)
+num_bins = 25
+bins = np.linspace(-0.5, max_value+0.5, num_bins+1) 
+util_plot.plot_waiting_time_distr(waiting_time_vrpopt, perc_vrpopt, bins, fig=fig1, filename=None, max_value=max_value)
+
+fig2 = plt.figure(figsize=(6,6), frameon=False)
+max_value = np.max(waiting_time_vrpprob)
+num_bins = 25
+bins = np.linspace(-0.5, max_value+0.5, num_bins+1) 
+util_plot.plot_waiting_time_distr(waiting_time_vrpprob, perc_vrpprob, bins, fig=fig2, filename=None, max_value=max_value)
+
+
+plt.show()
 
 
 

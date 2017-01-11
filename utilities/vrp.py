@@ -41,7 +41,15 @@ def run_vrp_allocation(route_lengths, vehicle_node_ind, passenger_node_ind):
     final_cost = allocation_cost[row_ind, col_ind].sum()
     vehicle_node_final = col_ind
     waiting_time = allocation_cost[row_ind, col_ind]
-    #print "Total allocation cost, opt: ", final_cost
+
+    return waiting_time
+
+def run_vrp(allocation_cost):
+    row_ind, col_ind = opt.linear_sum_assignment(allocation_cost)
+    final_cost = allocation_cost[row_ind, col_ind].sum()
+    vehicle_node_final = col_ind
+    waiting_time = allocation_cost[row_ind, col_ind]
+
     return waiting_time
 
 def run_rand_allocation(graph, vehicle_node_ind, passenger_node_ind):
@@ -52,6 +60,6 @@ def run_rand_allocation(graph, vehicle_node_ind, passenger_node_ind):
     col_ind_rand = np.random.choice(np.arange(num_vehicles), size=num_vehicles, replace=False)
     vehicle_node_final_rand = col_ind_rand
     final_cost_rand = allocation_cost[row_ind_rand, col_ind_rand].sum()
-    #print "Total allocation cost, rand: ", final_cost_rand
     waiting_time = allocation_cost[row_ind_rand, col_ind_rand]
+    
     return waiting_time

@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 
-def plot_waiting_time_distr(waiting_time, percentile, bins, filename, save_fig=False, max_value=None):
+def plot_waiting_time_distr(waiting_time, percentile, bins, fig=None, filename=None, max_value=None):
     a = 0.5
-    fig = plt.figure(figsize=(6,6), frameon=False)
+    if not fig:
+        fig = plt.figure(figsize=(6,6), frameon=False)
     hdata, hbins = np.histogram(waiting_time, bins=bins)
     hdata_max = np.max(hdata)
     plt.hist(waiting_time, bins=bins, color='blue', alpha=a)
@@ -18,7 +19,8 @@ def plot_waiting_time_distr(waiting_time, percentile, bins, filename, save_fig=F
     plt.ylim([0, hdata_max])
     plt.xlabel('Time [s]')
     plt.ylabel('Frequency')
-    if save_fig:
+    if filename:
         plt.savefig(filename, format='png', transparent=True)
 
-    plt.show()
+    if not fig:
+        plt.show()
