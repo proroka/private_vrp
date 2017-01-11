@@ -35,8 +35,6 @@ def get_allocation_cost_noisy(route_lengths, vehicle_pos_noisy, passenger_node_i
 
                 allocation_cost[i,j] += cost
 
-            # Normalize the allocation cost
-            #allocation_cost[i,j] /= const 
 
     return allocation_cost
 

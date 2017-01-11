@@ -50,6 +50,7 @@ print 'Num vehicles:', num_vehicles
 print 'Num passengers:', num_passengers
 print 'Num nodes:', num_nodes
 
+# Random initialization of vehicle/passenger nodes
 vehicle_node_ind = np.random.choice(graph.nodes(), size=num_vehicles, replace=False)
 passenger_node_ind = np.random.choice(graph.nodes(), size=num_passengers, replace=False)
 
@@ -60,7 +61,7 @@ vehicle_node_ind_noisy, vehicle_pos_noisy = util_noise.add_noise(vehicle_node_po
 # True allocation cost
 true_allocation_cost = util_vrp.get_allocation_cost(route_lengths, vehicle_node_ind, passenger_node_ind)
 
-## Run VRP versions
+# Run VRP versions
 waiting_time = dict()
 runs = 0
 

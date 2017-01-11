@@ -23,18 +23,6 @@ def get_allocation_cost(route_lengths, vehicle_node_ind, passenger_node_ind):
 
     return allocation_cost
 
-# Weighted allocation cost
-def get_allocation_cost_graph(graph, num_vehicles, num_passengers, vehicle_node_init, passenger_node_init):
-    allocation_cost = np.zeros((num_vehicles, num_passengers))
-    for i in range(num_vehicles):
-        all_paths = nx.shortest_path_length(graph, source=graph.nodes()[vehicle_node_init[i]], weight='weights')
-        
-        for j in range(num_passengers):
-            # Compute cost of shortest path for all possible allocations
-            allocation_cost[i,j] = all_paths[graph.nodes()[passenger_node_init[j]]]
-
-    return allocation_cost
-
 # Assign vehicles to passengers
 def get_routing_assignment(allocation_cost):
     row_ind, col_ind = opt.linear_sum_assignment(allocation_cost)

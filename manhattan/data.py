@@ -26,6 +26,7 @@ def LoadMapData(cache_folder='data', use_small_graph=False):
         graph = ox.load_graphml(graph_filename, folder=cache_folder)
         print 'Loading map from disk...'
     except IOError:
+        print 'Generating map...'
         if use_small_graph:
             # Get map around the Flatiron.
             bbox = ox.bbox_from_point((40.741063, -73.989701), distance=500)
