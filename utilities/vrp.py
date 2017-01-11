@@ -6,7 +6,7 @@ import scipy.optimize as opt
 
 BIG_NUMBER = 1e7
 
-# Weighted allocation cost
+# Allocation cost given precomputed route lengths
 def get_allocation_cost(route_lengths, vehicle_node_ind, passenger_node_ind):
     num_vehicles = len(vehicle_node_ind)
     num_passengers = len(passenger_node_ind)
