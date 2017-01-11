@@ -16,78 +16,86 @@ import manhattan.data as manh_data
 
 #-------------------------------------
 # Global settings
-vehicle_density = 0.1
-passenger_density = 0.1
+vehicle_density = 0.4
+passenger_density = 0.4
 # Noise
-epsilon = 0.02
+epsilon = 0.08
 
-set_seed = True
+set_seed = False
 
 if set_seed: 
-    np.random.seed(1019)
+    np.random.seed(1234) #1019
 
 # ---------------------------------------------------
-# Load small manhattan and initialize
+# Load grid graph 
 
-use_small_graph = True
-graph  = manh_data.LoadMapData(use_small_graph=use_small_graph)
+graph = util_graph.create_grid_map(grid_size=20, edge_length=100.)
 nearest_neighbor_searcher = util_graph.NearestNeighborSearcher(graph)
-route_lengths = manh_data.LoadShortestPathData(graph, use_small_graph=use_small_graph)
-taxi_data = manh_data.LoadTaxiData(graph, route_lengths, use_small_graph=use_small_graph)
+route_lengths = manh_data.LoadShortestPathData(graph, must_recompute=True)
+
 
 # Initialize 
 num_nodes = len(graph.nodes())
 num_vehicles = int(num_nodes * vehicle_density)
 num_passengers = int(num_nodes * passenger_density)
 
+print 'Num vehicles:', num_vehicles
+print 'Num passengers:', num_passengers
+print 'Num nodes:', num_nodes
+
 vehicle_node_ind = np.random.choice(graph.nodes(), size=num_vehicles, replace=False)
 passenger_node_ind = np.random.choice(graph.nodes(), size=num_passengers, replace=False)
 
-# Generate noisy vehicle indeces
+# Generate noisy vehicle positions
 vehicle_node_pos = util_graph.GetNodePositions(graph, vehicle_node_ind)
 vehicle_node_ind_noisy, vehicle_pos_noisy = util_noise.add_noise(vehicle_node_pos, nearest_neighbor_searcher, epsilon)
 
+# True allocation cost
+true_allocation_cost = util_vrp.get_allocation_cost(route_lengths, vehicle_node_ind, passenger_node_ind)
 
-node_ind_noisy, prob = util_prob.compute_nearest_nodes(vehicle_pos_noisy[0,:], epsilon, nearest_neighbor_searcher, graph)
+# Run VRP versions
+waiting_time = dict()
+runs = 0
 
+# Optimal
+print 'Computing VRP...'
+allocation_cost = util_vrp.get_allocation_cost(route_lengths, vehicle_node_ind, passenger_node_ind)
+cost, row_ind, col_ind = util_vrp.get_routing_assignment(allocation_cost)
+waiting_time[runs] = true_allocation_cost[row_ind, col_ind]
+runs += 1
 
-# print 'Nodes indeces:', node_ind_noisy
-# print 'Probabilities:', prob
-# print 'Normalization const:', const
+# Noisy with naive cost function
+print 'Computing noisy VRP, naive...'
+allocation_cost = util_vrp.get_allocation_cost(route_lengths, vehicle_node_ind_noisy, passenger_node_ind)
+cost, row_ind, col_ind = util_vrp.get_routing_assignment(allocation_cost)
+waiting_time[runs] = true_allocation_cost[row_ind, col_ind]
+runs += 1
 
-# Run VRP
-# print 'Computing naive VRP...'
-# waiting_time_vrpopt = util_vrp.run_vrp_allocation(route_lengths, vehicle_node_ind, passenger_node_ind)
-
-# print 'Computing noisy VRP...'
-# allocation_cost = util_prob.get_allocation_cost_noisy(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon,
-#                                                       nearest_neighbor_searcher, graph)
-# waiting_time_vrpprob = util_vrp.run_vrp(allocation_cost)
-
-
-# # Plot
-# print 'Plotting...'
-# perc_vrpopt = [np.percentile(waiting_time_vrpopt, 50), np.percentile(waiting_time_vrpopt, 95)]
-# perc_vrpprob = [np.percentile(waiting_time_vrpprob, 50), np.percentile(waiting_time_vrpprob, 95)]
-
-
-
-# fig1 = plt.figure(figsize=(6,6), frameon=False)
-# max_value = np.max(waiting_time_vrpopt)
-# num_bins = 25
-# bins = np.linspace(-0.5, max_value+0.5, num_bins+1) 
-# util_plot.plot_waiting_time_distr(waiting_time_vrpopt, perc_vrpopt, bins, fig=fig1, filename=None, max_value=max_value)
-
-# fig2 = plt.figure(figsize=(6,6), frameon=False)
-# max_value = np.max(waiting_time_vrpprob)
-# num_bins = 25
-# bins = np.linspace(-0.5, max_value+0.5, num_bins+1) 
-# util_plot.plot_waiting_time_distr(waiting_time_vrpprob, perc_vrpprob, bins, fig=fig2, filename=None, max_value=max_value)
+# Noisy with expected cost function
+print 'Computing noisy VRP, probabilistic...'
+allocation_cost = util_prob.get_allocation_cost_noisy(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, nearest_neighbor_searcher, graph)
+cost, row_ind, col_ind = util_vrp.get_routing_assignment(allocation_cost)
+waiting_time[runs] =  true_allocation_cost[row_ind, col_ind]
+runs += 1
 
 
-# plt.show()
+# Plot
+print 'Plotting...'
+
+for i in range(runs):
+    fig = plt.figure(figsize=(6,6), frameon=False)
+    max_value = np.max(waiting_time[i])
+    num_bins = 25
+    bins = np.linspace(-0.5, max_value+0.5, num_bins+1)
+    perc = [np.percentile(waiting_time[i], 50), np.percentile(waiting_time[i], 95)]
+    print 'Mean:', np.mean(waiting_time[i])
+    util_plot.plot_waiting_time_distr(waiting_time[0], perc, bins, fig=fig, filename=None, max_value=max_value)
 
 
+plt.show(block=False)
+input('Hit ENTER to close figure')
+
+plt.close()
 
 
 

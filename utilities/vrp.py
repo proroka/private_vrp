@@ -35,31 +35,20 @@ def get_allocation_cost_graph(graph, num_vehicles, num_passengers, vehicle_node_
 
     return allocation_cost
 
-def run_vrp_allocation(route_lengths, vehicle_node_ind, passenger_node_ind):
-    allocation_cost = get_allocation_cost(route_lengths, vehicle_node_ind, passenger_node_ind)
+# Assign vehicles to passengers
+def get_routing_assignment(allocation_cost):
     row_ind, col_ind = opt.linear_sum_assignment(allocation_cost)
-    final_cost = allocation_cost[row_ind, col_ind].sum()
-    vehicle_node_final = col_ind
-    waiting_time = allocation_cost[row_ind, col_ind]
+    cost = allocation_cost[row_ind, col_ind]
 
-    return waiting_time
+    return cost, row_ind, col_ind
 
-def run_vrp(allocation_cost):
-    row_ind, col_ind = opt.linear_sum_assignment(allocation_cost)
-    final_cost = allocation_cost[row_ind, col_ind].sum()
-    vehicle_node_final = col_ind
-    waiting_time = allocation_cost[row_ind, col_ind]
+# Random assignment
+def get_rand_routing_assignment(allocation_cost):
+    num_vehicles = allocation_cost.shape[0]
+    num_passengers = allocation_cost.shape[1]
+    row_ind = np.random.choice(np.arange(num_vehicles), size=num_vehicles, replace=False)
+    col_ind = np.random.choice(np.arange(num_passengers), size=num_passengers, replace=False)
+    cost = allocation_cost[row_ind, col_ind]
 
-    return waiting_time
+    return cost, row_ind, col_ind
 
-def run_rand_allocation(graph, vehicle_node_ind, passenger_node_ind):
-    num_vehicles = len(vehicle_node_ind)
-    num_passengers = len(passenger_node_ind)
-    allocation_cost = get_allocation_cost(graph, num_vehicles, num_passengers, vehicle_node_ind, passenger_node_ind)
-    row_ind_rand = np.random.choice(np.arange(num_vehicles), size=num_vehicles, replace=False)
-    col_ind_rand = np.random.choice(np.arange(num_vehicles), size=num_vehicles, replace=False)
-    vehicle_node_final_rand = col_ind_rand
-    final_cost_rand = allocation_cost[row_ind_rand, col_ind_rand].sum()
-    waiting_time = allocation_cost[row_ind_rand, col_ind_rand]
-    
-    return waiting_time

@@ -11,6 +11,21 @@ import utm
 from scipy.spatial import cKDTree
 
 
+# Create directional grid map
+def create_grid_map(grid_size=10, edge_length=100.):
+    nx_graph = nx.grid_2d_graph(grid_size, grid_size)
+    graph = nx.MultiDiGraph()
+    node_to_index = {}
+    for i, (x, y) in enumerate(nx_graph.nodes()):
+      graph.add_node(i, x=float(x) * edge_length, y=float(y) * edge_length)
+      node_to_index[(x, y)] = i
+    for u, v in nx_graph.edges():
+      graph.add_edge(node_to_index[u], node_to_index[v], length=edge_length,
+                     oneway=False)
+      graph.add_edge(node_to_index[v], node_to_index[u], length=edge_length,
+                   oneway=False)
+    return graph
+
 class NearestNeighborSearcher(object):
 
     def __init__(self, graph):

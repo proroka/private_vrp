@@ -38,10 +38,12 @@ def LoadMapData(cache_folder='data', use_small_graph=False):
     graph = ox.project_graph(graph)
     return graph
 
-def LoadShortestPathData(graph, cache_folder='data', use_small_graph=False):
+def LoadShortestPathData(graph, cache_folder='data', use_small_graph=False, must_recompute=False):
     # Load shortest pre-computed path lengths.
     route_lengths_filename = os.path.join(cache_folder, ('small_' if use_small_graph else '') + 'manhattan_route_lengths.pickle')
+    
     try:
+        if must_recompute: raise IOError('Forced dummy error')
         with open(route_lengths_filename, 'rb') as fp:
             print 'Loading shortest paths from disk...'
             route_lengths = pickle.load(fp)
