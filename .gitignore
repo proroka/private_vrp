@@ -1,10 +1,6 @@
 *.pyc
 .DS_Store
-grid_graphs/figures/*
-grid_graphs/data/*
-grid_graphs/data
-grid_graphs/figures
-general_graphs/figures
-general_graphs/data
-manhattan/data
+old/
+data/
+figures/
 
