@@ -19,7 +19,7 @@ import manhattan.data as manh_data
 vehicle_density = 0.3
 passenger_density = 0.3
 # Noise
-epsilon = 0.02
+epsilon = 0.05
 
 set_seed = True
 
@@ -98,9 +98,9 @@ util_plot.plot_waiting_time_distr(waiting_time_vrpprob, perc_vrpprob, bins, fig=
 
 
 plt.show(block=False)
-input("Hit Enter To Close")
+input('Hit ENTER to close figure')
+
 plt.close()
-#plt.show()
 
 
 
