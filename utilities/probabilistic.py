@@ -40,7 +40,7 @@ def get_allocation_cost_noisy(route_lengths, vehicle_pos_noisy, passenger_node_i
 
 def compute_nearest_nodes(vehicle_pos_noisy, epsilon, nearest_neighbor_searcher, graph):
     
-    num_samples = 1000
+    num_samples = 200
     point_locations = np.ones((num_samples,2)) * vehicle_pos_noisy
 
     # Find nearest nodes around noisy point, given Laplace(epsilon)
