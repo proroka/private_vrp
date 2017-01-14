@@ -16,7 +16,7 @@ import manhattan.data as manh_data
 #-------------------------------------
 # Global settings
 use_manhattan = True
-vehicle_density = np.array([0.05, 0.1, 0.15, 0.2])
+vehicle_density = np.array([0.05, 0.1, 0.15])
 
 # Noise for privacy mechanism
 num_epsilon = 5
@@ -58,6 +58,7 @@ waiting_time = collections.defaultdict(lambda: collections.defaultdict(lambda: [
 for it in range(num_iter):
 
     for num_vehicles in num_vehicles_list:
+        print 'Iteration %d with %d vehicles' % (it, num_vehicles)
 
         # Random initialization of vehicle/passenger nodes
         vehicle_node_ind = np.random.choice(graph.nodes(), size=num_vehicles, replace=False)
@@ -90,7 +91,7 @@ waiting_time = dict(waiting_time)
 for k, v in waiting_time.iteritems():
     waiting_time[k] = dict((m, n) for m, n in v.iteritems())
 
-filename = 'data/vrp_batch_s1.dat'
+filename = 'data/vrp_batch_s2.dat'
 with open(filename, 'wb') as fp:
     fp.write(msgpack.packb({'waiting_time': waiting_time, 'epsilons': epsilons, 'num_vehicles_list': num_vehicles_list,'num_iter': num_iter}))
 
