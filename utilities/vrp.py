@@ -11,8 +11,8 @@ def get_allocation_cost(route_lengths, vehicle_node_ind, passenger_node_ind):
     num_vehicles = len(vehicle_node_ind)
     num_passengers = len(passenger_node_ind)
     allocation_cost = np.zeros((num_vehicles, num_passengers))
-    for i in range(num_vehicles): 
-        start = vehicle_node_ind[i]   
+    for i in range(num_vehicles):
+        start = vehicle_node_ind[i]
         for j in range(num_passengers):
             end = passenger_node_ind[j]
             # Compute cost of shortest path for all possible allocations
@@ -34,9 +34,9 @@ def get_routing_assignment(allocation_cost):
 def get_rand_routing_assignment(allocation_cost):
     num_vehicles = allocation_cost.shape[0]
     num_passengers = allocation_cost.shape[1]
-    row_ind = np.random.choice(np.arange(num_vehicles), size=num_vehicles, replace=False)
-    col_ind = np.random.choice(np.arange(num_passengers), size=num_passengers, replace=False)
+    max_allocations = min(num_vehicles, num_passengers)
+    row_ind = np.random.choice(np.arange(num_vehicles), size=max_allocations, replace=False)
+    col_ind = np.random.choice(np.arange(num_passengers), size=max_allocations, replace=False)
     cost = allocation_cost[row_ind, col_ind]
 
     return cost, row_ind, col_ind
-
