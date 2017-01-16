@@ -15,7 +15,7 @@ import manhattan.data as manh_data
 
 #-------------------------------------
 # Load data
-filename = 'data/vrp_batch_s1.dat'
+filename = 'data/vrp_batch_test.dat'
 
 with open(filename, 'rb') as fp:
     print 'Loading waiting times...'

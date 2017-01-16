@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 import collections
+from collections import Counter
 import msgpack
 
 # My modules
@@ -16,7 +17,11 @@ import manhattan.data as manh_data
 #-------------------------------------
 # Global settings
 use_manhattan = True
-vehicle_density = np.array([0.05, 0.1, 0.15])
+num_passengers = 250
+num_vehicles_list = [250, 500, 1000]
+
+use_real_taxi_data = True
+must_recompute = False
 
 # Noise for privacy mechanism
 num_epsilon = 5
@@ -27,6 +32,10 @@ set_seed = False
 if set_seed:
     np.random.seed(1019)
 
+# Simulation 
+num_iter = 10
+filename = 'data/vrp_batch_real_s1.dat'
+
 # ---------------------------------------------------
 # Load small manhattan and initialize
 
@@ -34,6 +43,11 @@ if use_manhattan:
     use_small_graph = False
     graph  = manh_data.LoadMapData(use_small_graph=use_small_graph)
     nearest_neighbor_searcher = util_graph.NearestNeighborSearcher(graph)
+    taxi_data = manh_data.LoadTaxiData(graph, synthetic_rides=not use_real_taxi_data, must_recompute=False,
+                                   num_synthetic_rides=1000, max_rides=1000000)
+    # Use empirical edge costs for 'time'
+    manh_data.UpdateEdgeTime(graph, taxi_data, nearest_neighbor_searcher, must_recompute=False)
+    # Compute route lengths based on 'time' attribute of graph
     route_lengths = manh_data.LoadShortestPathData(graph, must_recompute=False)
 else:
     graph = util_graph.create_grid_map(grid_size=20, edge_length=100.)
@@ -42,10 +56,21 @@ else:
 
 num_nodes = len(graph.nodes())
 print 'Num nodes:', num_nodes
-num_vehicles_list = ((num_nodes * vehicle_density).astype(np.int32)).tolist()
+print 'Num vehicles:', num_vehicles_list
+print 'Num passengers:', num_passengers
 
-# Iterations
-num_iter = 10
+# Compute occurence of pick-up and drop-off locations 
+nearest_pickup_nodes, dist = nearest_neighbor_searcher.Search(taxi_data['pickup_xy'])
+nearest_dropoff_nodes, dist = nearest_neighbor_searcher.Search(taxi_data['dropoff_xy'])
+# Count probabilities of dropoff nodes
+key_node, count_node = zip(*Counter(nearest_dropoff_nodes).items())
+vehicle_node_ind_unique = np.array(key_node)
+vehicle_node_ind_unique_prob = np.array(count_node) / float(sum(count_node))
+# Count probabilities of pickup nodes
+key_node, count_node = zip(*Counter(nearest_pickup_nodes).items())
+passenger_node_ind_unique = np.array(key_node)
+passenger_node_ind_unique_prob = np.array(count_node) / float(sum(count_node))
+
 
 # Indeces
 OPT = 'optimal'
@@ -61,8 +86,12 @@ for it in range(num_iter):
         print 'Iteration %d with %d vehicles' % (it, num_vehicles)
 
         # Random initialization of vehicle/passenger nodes
-        vehicle_node_ind = np.random.choice(graph.nodes(), size=num_vehicles, replace=False)
-        passenger_node_ind = np.random.choice(graph.nodes(), size=num_vehicles, replace=False)
+        if not use_real_taxi_data:
+            vehicle_node_ind = np.random.choice(graph.nodes(), size=num_vehicles, replace=True)
+            passenger_node_ind = np.random.choice(graph.nodes(), size=num_passengers, replace=True)
+        else:
+            vehicle_node_ind = np.random.choice(vehicle_node_ind_unique, size=num_vehicles, replace=True, p=vehicle_node_ind_unique_prob)
+            passenger_node_ind = np.random.choice(passenger_node_ind_unique, size=num_passengers, replace=True, p=passenger_node_ind_unique_prob)
 
         # True allocation cost
         true_allocation_cost = util_vrp.get_allocation_cost(route_lengths, vehicle_node_ind, passenger_node_ind)
@@ -91,7 +120,6 @@ waiting_time = dict(waiting_time)
 for k, v in waiting_time.iteritems():
     waiting_time[k] = dict((m, n) for m, n in v.iteritems())
 
-filename = 'data/vrp_batch_s2.dat'
 with open(filename, 'wb') as fp:
     fp.write(msgpack.packb({'waiting_time': waiting_time, 'epsilons': epsilons, 'num_vehicles_list': num_vehicles_list,'num_iter': num_iter}))
 
