@@ -7,6 +7,7 @@ import scipy.special as spc
 import pickle
 import collections
 from collections import Counter
+import msgpack
 
 # My modules
 import utilities.graph as util_graph
@@ -19,18 +20,24 @@ import manhattan.data as manh_data
 #-------------------------------------
 # Global settings
 use_manhattan = True
-num_vehicles = 1000
-num_passengers = 100
+num_vehicles = 500
+num_passengers = 250
 
 use_real_taxi_data = True
 must_recompute = False
 
 # Noise for privacy mechanism
-epsilons = [0.02] #, 0.01]
+epsilons = [0.02, 0.01]
 
+ploton = False
 set_seed = False
 if set_seed:
     np.random.seed(1019)
+
+# Simulation
+filename = 'data/vrp_batch_real_distrib_s4.dat'
+# Iterations
+num_iter = 100
 
 # ---------------------------------------------------
 # Load small manhattan and initialize
@@ -74,8 +81,7 @@ passenger_node_ind_unique = np.array(key_node)
 passenger_node_ind_unique_prob = np.array(count_node) / float(sum(count_node))
 
 
-# Iterations
-num_iter = 1
+
 # Indeces
 OPT = 'optimal'
 RAND = 'random'
@@ -121,25 +127,31 @@ for it in range(num_iter):
         waiting_time['subopt_%g' % epsilon].extend(true_allocation_cost[row_ind, col_ind].flatten().tolist())
 
 
+with open(filename, 'wb') as fp:
+    fp.write(msgpack.packb({'waiting_time': waiting_time, 'epsilons': epsilons, 'num_vehicles': num_vehicles, 'num_passengers': num_passengers, 'num_iter': num_iter}))
+
 
 # Plot
-print 'Plotting...'
 
-set_x_lim = 1000
-max_value = max(np.max(w) for i, w in waiting_time.iteritems() if i != RAND)
-num_bins = 100
-for i, w in waiting_time.iteritems():
-    print 'Mean, %s: %g' % (i, np.mean(w))
-    if i == RAND:
-            continue
-    fig = plt.figure(figsize=(6,6), frameon=False)
-    bins = np.linspace(-0.5, max_value+0.5, num_bins+1)
-    stats = [np.mean(w)]
-    filename = 'figures/results_batch_v2_%s.eps' % i
-    util_plot.plot_waiting_time_distr(w, stats, bins, fig=fig, filename=filename, max_value=max_value, set_max=set_x_lim)
+if plot_on:
+    print 'Plotting...'
+
+    set_x_lim = 500
+    set_y_lim = 0.25
+    max_value = max(np.max(w) for i, w in waiting_time.iteritems() if i != RAND)
+    num_bins = 100
+    for i, w in waiting_time.iteritems():
+        print 'Mean, %s: %g' % (i, np.mean(w))
+        if i == RAND:
+                continue
+        fig = plt.figure(figsize=(6,6), frameon=False)
+        bins = np.linspace(-0.5, max_value+0.5, num_bins+1)
+        stats = [np.mean(w)]
+        fig_filename = 'figures/results_batch_real_distrib_%s.eps' % i
+        util_plot.plot_waiting_time_distr(w, stats, bins, fig=fig, filename=fig_filename, max_value=max_value, set_x_max=set_x_lim, set_y_max=set_y_lim)
 
 
-plt.show(block=False)
-raw_input('Hit ENTER to close figure')
+    plt.show(block=False)
+    raw_input('Hit ENTER to close figure')
 
-plt.close()
+    plt.close()

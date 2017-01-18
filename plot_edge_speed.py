@@ -62,6 +62,9 @@ plt.show(block=False)
 
 filename = 'figures/manhattan_speed_map.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
+filename = 'figures/manhattan_speed_map.png'
+plt.savefig(filename, format='png', transparent=True, frameon=False)
+
 
 raw_input('Hit ENTER to close figure')
 plt.close()

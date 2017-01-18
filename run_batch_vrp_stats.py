@@ -18,13 +18,13 @@ import manhattan.data as manh_data
 # Global settings
 use_manhattan = True
 num_passengers = 250
-num_vehicles_list = [250, 500, 1000]
+num_vehicles_list = [100, 250, 500, 1000]
 
 use_real_taxi_data = True
 must_recompute = False
 
 # Noise for privacy mechanism
-num_epsilon = 5
+num_epsilon = 10
 epsilons = (2 * np.logspace(-4, -1, num_epsilon)).tolist()
 print 'Epsilons:', epsilons
 
@@ -34,7 +34,7 @@ if set_seed:
 
 # Simulation 
 num_iter = 10
-filename = 'data/vrp_batch_real_s1.dat'
+filename = 'data/vrp_batch_real_s2.dat'
 
 # ---------------------------------------------------
 # Load small manhattan and initialize
@@ -102,6 +102,11 @@ for it in range(num_iter):
         cost, row_ind, col_ind = util_vrp.get_routing_assignment(allocation_cost)
         waiting_time[num_vehicles][OPT].extend(true_allocation_cost[row_ind, col_ind].flatten().tolist())
 
+        # Random
+        print 'Computing random VRP...'
+        allocation_cost = true_allocation_cost 
+        cost, row_ind, col_ind = util_vrp.get_rand_routing_assignment(allocation_cost)
+        waiting_time[num_vehicles][RAND].extend(true_allocation_cost[row_ind, col_ind].flatten().tolist())
 
         # Noisy with expected cost function
         for epsilon in epsilons:

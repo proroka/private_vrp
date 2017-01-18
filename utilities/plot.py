@@ -4,15 +4,18 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 
-def plot_waiting_time_distr(waiting_time, percentile, bins, fig=None, filename=None, max_value=None, set_max=None):
+def plot_waiting_time_distr(waiting_time, percentile, bins, fig=None, filename=None, max_value=None, set_x_max=None, set_y_max=None):
     a = 0.5
     if not fig:
         fig = plt.figure(figsize=(6,6), frameon=False)
-    
+        
     hdata, hbins = np.histogram(waiting_time, bins=bins)
     # Normalize
     hdata = hdata / float(len(waiting_time))
-    hdata_max = np.max(hdata)
+    if set_y_max:
+        hdata_max = set_y_max
+    else:
+        hdata_max = np.max(hdata)
     # Plot
     plt.bar(hbins[:-1], hdata, hbins[1]-hbins[0], bottom=None, hold=None, data=None)
     for i in range(len(percentile)):
@@ -20,8 +23,10 @@ def plot_waiting_time_distr(waiting_time, percentile, bins, fig=None, filename=N
     if not max_value:
         max_value = np.max(waiting_time)
     plt.xlim([-1, max_value+1])
-    if set_max:
-        plt.xlim([-1, set_max])
+    if set_x_max:
+        plt.xlim([-1, set_x_max])
+
+    
     plt.ylim([0, hdata_max])
     plt.xlabel('Time [s]')
     plt.ylabel('Frequency')

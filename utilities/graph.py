@@ -78,8 +78,17 @@ def PlotRoute(G, route, ax):
     destination_node = route[-1]
     origin_destination_lats = (G.node[origin_node]['y'], G.node[destination_node]['y'])
     origin_destination_lons = (G.node[origin_node]['x'], G.node[destination_node]['x'])
-    ax.scatter(origin_destination_lons, origin_destination_lats, s=100,
-               c='r', alpha=0.3, edgecolor='none', zorder=4)
+    #ax.scatter(origin_destination_lons, origin_destination_lats, s=100,
+     #          c='r', alpha=0.3, edgecolor='none', zorder=4)
+
+    origin_lats = (G.node[origin_node]['y'])
+    dest_lats = (G.node[destination_node]['y'])
+    origin_lons = (G.node[origin_node]['x'])
+    dest_lons = (G.node[destination_node]['x'])
+
+    ax.scatter(origin_lons, origin_lats, s=100, c='r', alpha=0.5, edgecolor='none', zorder=4)
+    ax.scatter(dest_lons, dest_lats, s=100, c='g', alpha=0.5, edgecolor='none', zorder=4)
+
     edge_nodes = list(zip(route[:-1], route[1:]))
     lines = []
     for u, v in edge_nodes:
