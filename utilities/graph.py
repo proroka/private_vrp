@@ -1,18 +1,28 @@
-import matplotlib.pylab as plt
 from matplotlib.collections import LineCollection
 import networkx as nx
 import numpy as np
-import os
-import osmnx as ox
-import pandas as pd
-import pickle
-import sys
 import utm
 from scipy.spatial import cKDTree
 
 
+# Normalize the graph nodes to be contiguous indices.
+def normalize(graph, route_lengths):
+    mapping = {}
+    for i, node in enumerate(graph.nodes()):
+        mapping[node] = i
+    graph = nx.relabel_nodes(graph, mapping=mapping)
+    # Update route lengths.
+    assert len(mapping) == len(route_lengths)
+    new_route_lengths = np.empty((len(mapping), len(mapping)), dtype=np.float32)
+    for u, lengths in route_lengths.iteritems():
+        assert len(lengths) == len(mapping)
+        for v, l in lengths.iteritems():
+            new_route_lengths[mapping[u], mapping[v]] = route_lengths[u][v]
+    return graph, new_route_lengths, NearestNeighborSearcher(graph)
+
+
 # Create directional grid map
-def create_grid_map(grid_size=10, edge_length=100.):
+def create_grid_map(grid_size=10, edge_length=100., default_speed=10.):
     nx_graph = nx.grid_2d_graph(grid_size, grid_size)
     graph = nx.MultiDiGraph()
     node_to_index = {}
@@ -21,9 +31,9 @@ def create_grid_map(grid_size=10, edge_length=100.):
       node_to_index[(x, y)] = i
     for u, v in nx_graph.edges():
       graph.add_edge(node_to_index[u], node_to_index[v], length=edge_length,
-                     oneway=False)
+                     oneway=False, speed=default_speed, time=edge_length / default_speed)
       graph.add_edge(node_to_index[v], node_to_index[u], length=edge_length,
-                   oneway=False)
+                     oneway=False, speed=default_speed, time=edge_length / default_speed)
     return graph
 
 class NearestNeighborSearcher(object):
