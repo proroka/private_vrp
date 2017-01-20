@@ -34,7 +34,7 @@ if set_seed:
 
 # Simulation 
 num_iter = 10
-filename = 'data/vrp_batch_real_s2.dat'
+filename = 'data/vrp_batch_real_s3.dat'
 
 # ---------------------------------------------------
 # Load small manhattan and initialize

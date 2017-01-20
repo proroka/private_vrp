@@ -62,7 +62,7 @@ cost, row_ind, col_ind = util_vrp.get_routing_assignment(allocation_cost)
 waiting_time = allocation_cost[row_ind, col_ind]
 
 # Plot selected rides
-num_routes = 2
+num_routes = 4
 rand_ind = np.random.choice(range(num_rides),num_routes)
 for i in rand_ind:
     destination_node = passenger_node_ind[row_ind[i]]
@@ -73,11 +73,8 @@ for i in rand_ind:
     util_graph.PlotRoute(graph, route, ax)
     print 'Distance from %s to %s: %g [m]' % (origin_node, destination_node, distance)
 
-filename = 'figures/routes_map.eps'
+filename = 'figures/routes_map_2.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
-filename = 'figures/routes_map.png'
-plt.savefig(filename, format='png', transparent=True, frameon=False)
-
 
 plt.show()
 

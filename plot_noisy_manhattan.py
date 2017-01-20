@@ -55,11 +55,14 @@ noisy_points_size = np.array(count_node) * 100. / float(max(count_node))
 
 # Plot noisy samples
 plt.scatter(noisy_point_locations[:,0], noisy_point_locations[:,1], s=40, c='b', alpha=0.3, edgecolor='none', zorder=10)
-nearest_nodes_xy = util_graph.GetNodePositions(graph, nearest_nodes)
+nearest_nodes_xy = util_graph.GetNodePositions(graph, key_node)
 plt.scatter(nearest_nodes_xy[:,0], nearest_nodes_xy[:,1], color='red', s=noisy_points_size, zorder=10)
 
 filename = 'figures/manhattan_noisy.png'
 plt.savefig(filename, format='png', transparent=True, frameon=False)
+filename = 'figures/manhattan_noisy.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
+
 
 plt.show()
 

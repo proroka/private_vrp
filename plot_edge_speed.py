@@ -10,9 +10,9 @@ import manhattan.data as manh_data
 
 #-------------------------------------
 
-use_small_graph = False
+use_small_graph = True
 use_real_taxi_data = True
-must_recompute = False
+must_recompute = True
 
 # Loads graph, uses default avg travel time fro all edges; attribut is 'time'
 graph = manh_data.LoadMapData(use_small_graph=use_small_graph)
@@ -60,9 +60,9 @@ cbar = fig.colorbar(cax, ticks=[min_km_speed / 3.6, max_km_speed / 3.6])
 cbar.ax.set_yticklabels(['%d km/h' % min_km_speed, '%d km/h' % max_km_speed])
 plt.show(block=False)
 
-filename = 'figures/manhattan_speed_map.eps'
+filename = 'figures/manhattan_speed_map_small.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
-filename = 'figures/manhattan_speed_map.png'
+filename = 'figures/manhattan_speed_map_small.png'
 plt.savefig(filename, format='png', transparent=True, frameon=False)
 
 

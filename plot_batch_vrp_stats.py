@@ -17,8 +17,8 @@ import manhattan.data as manh_data
 
 #-------------------------------------
 # Load data
-filename = 'data/vrp_batch_real_s2.dat'
 
+filename = 'data/vrp_batch_real_s2.dat'
 with open(filename, 'rb') as fp:
     print 'Loading waiting times...'
     data = msgpack.unpackb(fp.read())
@@ -26,6 +26,19 @@ with open(filename, 'rb') as fp:
     epsilons = data['epsilons']
     num_vehicles_list = data['num_vehicles_list']
 
+if 0:
+    filename = 'data/vrp_batch_real_s3.dat'
+    with open(filename, 'rb') as fp:
+        print 'Loading waiting times...'
+        data_s3 = msgpack.unpackb(fp.read())
+        waiting_time_s3 = data_s3['waiting_time']
+        epsilons_s3 = data_s3['epsilons']
+        num_vehicles_list_s3 = data_s3['num_vehicles_list']
+
+    # Merge
+    for n, d in waiting_time.iteritems(): 
+        for e, w in d.iteritems(): 
+            w.extend(waiting_time_s3[n][e])
 
 #-------------------------------------
 # Plot
