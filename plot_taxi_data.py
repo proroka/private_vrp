@@ -1,8 +1,10 @@
 import datetime
 import heapq
+import numpy as np
 import matplotlib.pylab as plt
-from matplotlib.dates import DayLocator, DateFormatter
+from matplotlib.dates import HourLocator, DateFormatter
 import tqdm
+import time
 
 # My modules
 import utilities.graph as util_graph
@@ -38,6 +40,8 @@ ignore_ride_distance = 300.
 ignore_ride_duration = 20
 batching_duration = 20  # Batch requests (passenger pickups).
 max_rides = None
+min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
+max_timestamp = min_timestamp + 24 * 60 * 60
 
 time = []
 num_taxis = []
@@ -47,6 +51,8 @@ print 'Analyzing taxi data...'
 for i, (start_time, end_time, u, v) in enumerate(tqdm.tqdm(zip(
         taxi_data['pickup_time'], taxi_data['dropoff_time'],
         taxi_data['pickup_xy'], taxi_data['dropoff_xy']), total=min(max_rides, len(taxi_data['pickup_time'])) if max_rides else len(taxi_data['pickup_time']))):
+    if end_time < min_timestamp - 30 * 60: continue
+    if start_time >= max_timestamp + 30 * 60: break
     if max_rides and i > max_rides: break
     if end_time - start_time < ignore_ride_duration: continue
     u_node, du = nearest_neighbor_searcher.Search(u)
@@ -80,20 +86,40 @@ while queue and queue.peek() <= start_time:
     time.append(t)
     num_taxis.append(len(queue))
 
+
+def smooth_plot(x, y, window=30, stride=1):
+    def rolling_window(a, window):
+        a = np.array(a)
+        shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
+        strides = a.strides + (a.strides[-1],)
+        return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
+    return np.mean(rolling_window(x, window), axis=-1)[::stride], np.nanmean(rolling_window(y, window), axis=-1)[::stride], np.nanstd(rolling_window(y, window), axis=-1)[::stride]
+
+
 fig, ax1 = plt.subplots()
 ax2 = ax1.twinx()
-ax1.plot_date([datetime.datetime.fromtimestamp(t) for t in time], num_taxis, 'b-')
-ax2.plot_date([datetime.datetime.fromtimestamp(t) for t in requests_time], num_simultaneuous_requests, 'g-')
-ax1.xaxis.set_major_locator(DayLocator())
-ax1.xaxis.set_minor_locator(DayLocator())
-ax1.xaxis.set_major_formatter(DateFormatter('%Y-%m-%d'))
-ax1.fmt_xdata = DateFormatter('%Y-%m-%d')
+num_taxis = np.interp(requests_time, time, num_taxis)
+x, y, sy = smooth_plot(requests_time, num_taxis, window=int(30 * 60 / batching_duration), stride=int(10 * 60 / batching_duration))
+t = [datetime.datetime.fromtimestamp(t) for t in x]
+ax1.plot(t, y, 'b-')
+ax1.fill_between(t, y + sy, y - sy, facecolor='b', alpha=0.5)
+x, y, sy = smooth_plot(requests_time, num_simultaneuous_requests, window=int(30 * 60 / batching_duration), stride=int(10 * 60 / batching_duration))
+t = [datetime.datetime.fromtimestamp(t) for t in x]
+ax2.plot(t, y, 'g-')
+ax2.fill_between(t, y + sy, y - sy, facecolor='g', alpha=0.5)
+ax1.xaxis.set_major_locator(HourLocator(interval=4))
+ax1.xaxis.set_minor_locator(HourLocator())
+ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+ax1.fmt_xdata = DateFormatter('%H:%M')
 ax1.grid(True)
+ax1.set_ylim(bottom=0, top=5500)
+ax1.set_xlim(left=datetime.datetime.fromtimestamp(min_timestamp), right=datetime.datetime.fromtimestamp(max_timestamp))
 ax1.set_xlabel('Time')
 ax1.set_ylabel('Occupied taxis', color='b')
 for tl in ax1.get_yticklabels():
     tl.set_color('b')
-ax2.set_ylabel('Simultaneuous requests', color='g')
+ax2.set_ylabel('Number of requests per batch', color='g')
+ax2.set_ylim(bottom=0, top=400)
 for tl in ax2.get_yticklabels():
     tl.set_color('g')
 
