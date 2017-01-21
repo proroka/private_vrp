@@ -19,7 +19,6 @@ with open(filename, 'rb') as fp:
     num_vehicles_list = data['num_vehicles_list']
     repeats = [0] + data['repeats']
 
-
 #-------------------------------------
 # Helper function
 def get_bounds(data, confidence=0.95):
