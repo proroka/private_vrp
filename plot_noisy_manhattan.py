@@ -1,15 +1,6 @@
 import matplotlib.pylab as plt
-from matplotlib.collections import LineCollection
-import networkx as nx
 import numpy as np
-import os
 import osmnx as ox
-import pandas as pd
-import pickle
-import sys
-import utm
-from scipy.spatial import cKDTree
-import scipy.special as spc
 
 # My modules
 import utilities.graph as util_graph
@@ -18,9 +9,8 @@ import manhattan.data as manh_data
 
 #-------------------------------------
 
-
 use_small_graph = True
-graph  = manh_data.LoadMapData(use_small_graph=use_small_graph)
+graph = manh_data.LoadMapData(use_small_graph=use_small_graph)
 nearest_neighbor_searcher = util_graph.NearestNeighborSearcher(graph)
 
 
@@ -40,7 +30,7 @@ print 'Closest node to Flatiron is %d : %g [m] away' % (flatiron_node, distance)
 # Get noisy points and indeces
 epsilon = 0.02
 num_samples = 100
-point_locations = np.ones((num_samples,2)) * flatiron_xy
+point_locations = np.ones((num_samples, 2)) * flatiron_xy
 nearest_nodes, noisy_point_locations = util_noise.add_noise(point_locations, nearest_neighbor_searcher, epsilon)
 
 # Count occurences of nodes, scale size of plot point
@@ -54,15 +44,11 @@ key_node, count_node = zip(*count.items())
 noisy_points_size = np.array(count_node) * 100. / float(max(count_node))
 
 # Plot noisy samples
-plt.scatter(noisy_point_locations[:,0], noisy_point_locations[:,1], s=40, c='b', alpha=0.3, edgecolor='none', zorder=10)
+plt.scatter(noisy_point_locations[:, 0], noisy_point_locations[:, 1], s=40, c='b', alpha=0.3, edgecolor='none', zorder=10)
 nearest_nodes_xy = util_graph.GetNodePositions(graph, key_node)
-plt.scatter(nearest_nodes_xy[:,0], nearest_nodes_xy[:,1], color='red', s=noisy_points_size, zorder=10)
+plt.scatter(nearest_nodes_xy[:, 0], nearest_nodes_xy[:, 1], color='red', s=noisy_points_size, zorder=10)
 
-filename = 'figures/manhattan_noisy.png'
-plt.savefig(filename, format='png', transparent=True, frameon=False)
 filename = 'figures/manhattan_noisy.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-
 plt.show()
-

@@ -21,7 +21,7 @@ must_recompute = False
 
 # Noise for privacy mechanism
 num_epsilon = 10
-epsilons = (2 * np.logspace(-4, -1, num_epsilon)).tolist()
+epsilons = np.geomspace(0.005, 0.1, num_epsilon).tolist()
 print 'Epsilons:', epsilons
 
 set_seed = False
@@ -30,7 +30,7 @@ if set_seed:
 
 # Simulation
 num_iter = 20
-filename = 'data/vrp_batch_real_repeats.dat'
+filename = 'data/vrp_batch_real_repeats_v2.dat'
 
 # ---------------------------------------------------
 # Load small manhattan and initialize
