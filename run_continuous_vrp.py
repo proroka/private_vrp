@@ -19,11 +19,15 @@ num_vehicles = 5000
 drop_passengers_after = 1200.  # 20 minutes.
 min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
 max_timestamp = min_timestamp + 24 * 60 * 60
+version = 'optimal'
 
 # If not None, the taxi fleet changes as a function of time (up to the specified number of vehicles: num_vehicles).
 taxi_fleet_filename = 'data/taxi_fleet.dat'
 # Adds extra taxis (by a given ratio, i.e. 1.1 -> 10% extra).
-extra_fleet = 1.5
+# According to http://www.nyc.gov/html/tlc/downloads/pdf/2014_taxicab_fact_book.pdf, the average ratio of occupied taxis is
+# "On average, 64% of taxis are occupied during these hours (4PM - 6PM)." == 1.56x
+extra_fleet = 1.56
+fleet_window_in_secs = 60 * 10  # Fleet size is increased ahead of time and decrease after time (as a function of real taxi occupation)
 
 graph = manh_data.LoadMapData(use_small_graph=False)
 nearest_neighbor_searcher = util_graph.NearestNeighborSearcher(graph)
@@ -106,7 +110,10 @@ class PriorityQueue(object):
         return len(self._queue)
 
 def get_taxi_fleet_size(current_time):
-    return min(num_vehicles, int(extra_fleet * np.interp(current_time, taxi_fleet_timestamps, taxi_fleet_size))) if taxi_fleet_filename else num_vehicles
+    if taxi_fleet_filename:
+        n = extra_fleet * np.interp([current_time - fleet_window_in_secs, current_time + fleet_window_in_secs], taxi_fleet_timestamps, taxi_fleet_size)
+        return int(min(num_vehicles, np.max(n)))
+    return num_vehicles
 
 ignore_ride_distance = 300.
 ignore_ride_duration = 20
@@ -218,6 +225,17 @@ for num_batches, end_batch_time in enumerate(tqdm.tqdm(end_batch_times, total=ma
     batch_waiting_times.append(waiting_times.values())
     batch_times.append(end_batch_time)
 
+with open('data/simulation_%s.dat', 'wb') as fp:
+    fp.write(msgpack.packb({
+        'batch_times': batch_times,
+        'batch_num_available_taxis': batch_num_available_taxis,
+        'batch_total_taxis': batch_total_taxis,
+        'batch_num_requests': batch_num_requests,
+        'batch_dropped_requests': batch_dropped_requests,
+        'batch_waiting_times': batch_waiting_times,
+    }))
+
+
 batch_times = np.array(batch_times)
 batch_num_available_taxis = np.array(batch_num_available_taxis)
 batch_total_taxis = np.array(batch_total_taxis)
@@ -242,13 +260,16 @@ plt.plot(t, y, 'b', lw=2, label='Total')
 plt.fill_between(t, y + sy, y - sy, facecolor='b', alpha=0.5)
 ax.xaxis.set_major_locator(HourLocator(interval=4))
 ax.xaxis.set_minor_locator(HourLocator())
-ax.xaxis.set_major_formatter(DateFormatter('%Y-%m-%d %H:%M'))
-ax.fmt_xdata = DateFormatter('%Y-%m-%d %H:%M')
+ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+ax.fmt_xdata = DateFormatter('%H:%M')
 ax.grid(True)
 ax.set_xlabel('Time')
 ax.set_ylabel('Number of taxis')
 ax.set_xlim(left=datetime.datetime.fromtimestamp(min_timestamp), right=datetime.datetime.fromtimestamp(max_timestamp))
+ax.set_ylim(bottom=0)
 plt.legend()
+filename = 'figures/simulation_%s_taxis.eps' % version
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 fig, ax = plt.subplots()
 x, y, sy = smooth_plot(batch_times, batch_num_requests, window=int(30 * 60 / batching_duration), stride=int(60 * 10 / batching_duration))
@@ -261,13 +282,16 @@ plt.plot(t, y, 'r', lw=2, label='Dropped')
 plt.fill_between(t, y + sy, y - sy, facecolor='r', alpha=0.5)
 ax.xaxis.set_major_locator(HourLocator(interval=4))
 ax.xaxis.set_minor_locator(HourLocator())
-ax.xaxis.set_major_formatter(DateFormatter('%Y-%m-%d %H:%M'))
-ax.fmt_xdata = DateFormatter('%Y-%m-%d %H:%M')
+ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+ax.fmt_xdata = DateFormatter('%H:%M')
 ax.grid(True)
 ax.set_xlabel('Time')
 ax.set_ylabel('Number of requests per batch')
 ax.set_xlim(left=datetime.datetime.fromtimestamp(min_timestamp), right=datetime.datetime.fromtimestamp(max_timestamp))
+ax.set_ylim(bottom=0)
 plt.legend()
+filename = 'figures/simulation_%s_requests.eps' % version
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 fig, ax = plt.subplots()
 mean_times = []
@@ -280,12 +304,15 @@ plt.plot(t, y, 'b', lw=2)
 plt.fill_between(t, y + sy, y - sy, facecolor='b', alpha=0.5)
 ax.xaxis.set_major_locator(HourLocator(interval=4))
 ax.xaxis.set_minor_locator(HourLocator())
-ax.xaxis.set_major_formatter(DateFormatter('%Y-%m-%d %H:%M'))
-ax.fmt_xdata = DateFormatter('%Y-%m-%d %H:%M')
+ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+ax.fmt_xdata = DateFormatter('%H:%M')
 ax.grid(True)
 ax.set_xlabel('Time')
 ax.set_ylabel('Average waiting time [s]')
 ax.set_xlim(left=datetime.datetime.fromtimestamp(min_timestamp), right=datetime.datetime.fromtimestamp(max_timestamp))
+ax.set_ylim(bottom=0)
+filename = 'figures/simulation_%s_waiting_time.eps' % version
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 plt.show(block=False)
 
