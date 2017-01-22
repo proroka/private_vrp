@@ -207,7 +207,6 @@ def UpdateEdgeTime(graph, taxi_data, nearest_neighbor_searcher, default_speed=No
     mean_speed = np.mean(all_speeds)
     std_speed = np.std(all_speeds)
     print 'Average speed: %.2f +- %.2f km/h' % (mean_speed * 3.6, std_speed * 3.6)
-    print 'Weighted speed: %.2f km/h' % (np.sum(all_speeds * all_lengths) / np.sum(all_lengths))
     if default_speed is None:
         default_speed = mean_speed
     # Add a time attribute to edges.

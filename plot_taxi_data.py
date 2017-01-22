@@ -5,6 +5,7 @@ import matplotlib.pylab as plt
 from matplotlib.dates import HourLocator, DateFormatter
 import tqdm
 import time
+import msgpack
 
 # My modules
 import utilities.graph as util_graph
@@ -13,6 +14,7 @@ import manhattan.data as manh_data
 use_small_graph = False
 use_real_taxi_data = True
 must_recompute = False
+filename = 'data/taxi_fleet.dat'
 
 graph = manh_data.LoadMapData(use_small_graph=use_small_graph)
 nearest_neighbor_searcher = util_graph.NearestNeighborSearcher(graph)
@@ -103,6 +105,11 @@ x, y, sy = smooth_plot(requests_time, num_taxis, window=int(30 * 60 / batching_d
 t = [datetime.datetime.fromtimestamp(t) for t in x]
 ax1.plot(t, y, 'b-')
 ax1.fill_between(t, y + sy, y - sy, facecolor='b', alpha=0.5)
+
+# Save x and y.
+with open(filename, 'wb') as fp:
+    fp.write(msgpack.packb({'num_taxis': y.tolist(), 'time': x.tolist()}))
+
 x, y, sy = smooth_plot(requests_time, num_simultaneuous_requests, window=int(30 * 60 / batching_duration), stride=int(10 * 60 / batching_duration))
 t = [datetime.datetime.fromtimestamp(t) for t in x]
 ax2.plot(t, y, 'g-')
