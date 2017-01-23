@@ -15,7 +15,7 @@ import utilities.noise as util_noise
 import utilities.vrp as util_vrp
 import manhattan.data as manh_data
 
-num_vehicles = 5000
+num_vehicles = 6000
 drop_passengers_after = 1200.  # 20 minutes.
 min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
 max_timestamp = min_timestamp + 24 * 60 * 60
@@ -111,7 +111,7 @@ class PriorityQueue(object):
 
 def get_taxi_fleet_size(current_time):
     if taxi_fleet_filename:
-        n = extra_fleet * np.interp([current_time - fleet_window_in_secs, current_time + fleet_window_in_secs], taxi_fleet_timestamps, taxi_fleet_size)
+        n = extra_fleet * np.interp(np.linspace(current_time - fleet_window_in_secs, current_time + fleet_window_in_secs, 10), taxi_fleet_timestamps, taxi_fleet_size)
         return int(min(num_vehicles, np.max(n)))
     return num_vehicles
 
@@ -225,7 +225,7 @@ for num_batches, end_batch_time in enumerate(tqdm.tqdm(end_batch_times, total=ma
     batch_waiting_times.append(waiting_times.values())
     batch_times.append(end_batch_time)
 
-with open('data/simulation_%s.dat', 'wb') as fp:
+with open('data/simulation_%s.dat' % version, 'wb') as fp:
     fp.write(msgpack.packb({
         'batch_times': batch_times,
         'batch_num_available_taxis': batch_num_available_taxis,
