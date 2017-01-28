@@ -30,7 +30,7 @@ if set_seed:
 
 # Simulation
 num_iter = 20
-filename = 'data/vrp_batch_real_repeats_v2.dat'
+filename = 'data/vrp_batch_real_repeats_v3.dat'
 
 # ---------------------------------------------------
 # Load small manhattan and initialize

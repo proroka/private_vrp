@@ -9,7 +9,7 @@ import scipy.stats
 
 #-------------------------------------
 # Load data
-filename = 'data/vrp_batch_real_repeats_v2.dat'
+filename = 'data/vrp_batch_real_repeats_v3.dat'
 
 with open(filename, 'rb') as fp:
     print 'Loading waiting times...'

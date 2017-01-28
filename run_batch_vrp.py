@@ -16,14 +16,14 @@ import manhattan.data as manh_data
 # Global settings
 use_manhattan = True
 num_vehicles = 1000
-num_passengers = 100
+num_passengers = 250
 
 use_real_taxi_data = True
 must_recompute = False
 
 # Noise for privacy mechanism
 epsilons = [0.02]
-repeats = [1, 2, 4, 8]  # Start at 1 (0 is always tested).
+repeats = [1, 2, 3]  # Start at 1 (0 is always tested).
 
 plot_on = True
 set_seed = False

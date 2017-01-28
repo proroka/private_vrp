@@ -66,7 +66,7 @@ def get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_
 
     # Precompute all vehicles random positions and the distance from every sample to every passenger.
     if previous_vehicle_distances is None:
-        num_samples = 5
+        num_samples = 100
         vehicle_sample_distances = []
         for p in vehicle_pos_noisy:
             point_locations = np.ones((num_samples, 2)) * p

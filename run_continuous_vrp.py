@@ -21,10 +21,10 @@ min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
 max_timestamp = min_timestamp + 24 * 60 * 60
 version = 'epsilon'
 epsilon = 0.02  # Only used when version is set to "epsilon".
-num_of_allocated_vehicles = 1  # Allocated vehicles per request (when possible).
+allocate_extra_only_when = 1.  # Allocate more than vehicles only when the number of available vehicles is larger than so many times the requests.
 
 if version == 'epsilon':
-    version = 'epsilon_%g' % epsilon
+    version = 'epsilon_%g_variable' % epsilon
 
 # If not None, the taxi fleet changes as a function of time (up to the specified number of vehicles: num_vehicles).
 taxi_fleet_filename = 'data/taxi_fleet.dat'
@@ -33,6 +33,9 @@ taxi_fleet_filename = 'data/taxi_fleet.dat'
 # "On average, 64% of taxis are occupied during these hours (4PM - 6PM)." == 1.56x
 extra_fleet = 1.56
 fleet_window_in_secs = 60 * 10  # Fleet size is increased ahead of time and decrease after time (as a function of real taxi occupation)
+dropoff_offset = 0  # Extra offset in time during which taxis are unavailable.
+
+np.random.seed(1019)
 
 graph = manh_data.LoadMapData(use_small_graph=False)
 nearest_neighbor_searcher = util_graph.NearestNeighborSearcher(graph)
@@ -57,12 +60,17 @@ class Taxi(object):
         self.noise_offset = util_noise.polar2euclid(radius, theta)[0, :]
         self.reported_dropoff_time = None
         self.dropoff_time = None
+        self.is_immediately_available = True
+        self.is_chosen = False
         self.update_reported_position()
     def pickup(self, request, current_time):
         # If the taxi is still dropping someone, adjust current_time to the future.
         # self.true_position holds the future dropoff location.
         if self.dropoff_time and self.dropoff_time > current_time:
             current_time = self.dropoff_time
+            self.is_immediately_available = False
+        else:
+            self.is_immediately_available = True
         self.pickup_time = current_time + route_lengths[self.true_position][request.pickup]
         # Here, the taxi merely makes a promise to pickup the passenger at that time.
         request.add_taxi(self)
@@ -102,6 +110,7 @@ class Request(object):
         first_taxi.update_reported_position()
         first_taxi.reported_dropoff_time = (current_time + route_lengths[old_reported_position][self.pickup] +
                                             route_lengths[self.pickup][first_taxi.reported_position])
+        first_taxi.is_chosen = True
         # Taxis that are not used go to the advertized position of the first taxi.
         first_taxi_xy = util_graph.GetNodePosition(graph, first_taxi.reported_position)
         for taxi in taxi_ordered_by_pickup[1:]:
@@ -118,7 +127,8 @@ class Request(object):
             old_reported_position = taxi.reported_position
             taxi.reported_position = first_taxi.reported_position
             taxi.reported_dropoff_time = current_time + route_lengths[old_reported_position][self.pickup] + route_lengths[self.pickup][taxi.reported_position]
-        return taxi_ordered_by_pickup[0].pickup_time - self.time
+            taxi.is_chosen = False
+        return first_taxi.pickup_time - self.time
     def __hash__(self):
         return hash(self.identifier)
     def __eq__(x, y):
@@ -133,17 +143,17 @@ class PriorityQueue(object):
     def push(self, taxi):
         assert taxi.reported_dropoff_time is not None
         assert taxi not in self._set
-        heapq.heappush(self._queue, (taxi.reported_dropoff_time, taxi))
+        heapq.heappush(self._queue, (taxi.reported_dropoff_time + dropoff_offset, taxi))
         self._set.add(taxi)
     def pop(self):
         taxi = heapq.heappop(self._queue)[-1]
         self._set.remove(taxi)
         return taxi
-    def peek(self):
-        return self._queue[0][-1]
+    def peek_priority(self):
+        return self._queue[0][0]
     def pop_available(self, current_time):
         taxis = set()
-        while self._queue and self.peek().reported_dropoff_time < current_time:
+        while self._queue and self.peek_priority() < current_time:
             taxi = self.pop()
             taxis.add(taxi)
         return taxis
@@ -174,24 +184,27 @@ available_taxis = set(Taxi(i, n) for i, n in enumerate(taxi_initial_nodes[:taxi_
 occupied_taxis = PriorityQueue()
 current_batch_requests = set()
 
-# Holds the end time of each batch.
-batch_times = [float(taxi_data['pickup_time'][0])]
-# Holds the waiting times for each passenger that requested a taxi during that batch.
-batch_waiting_times = [[]]
-# Holds the number of available taxis at the end of the batch (these taxis will be dispatched).
-batch_num_available_taxis = [len(available_taxis)]  # TODO: Hold really available taxis too.
-batch_total_taxis = [len(available_taxis)]
-batch_num_requests = [0]
-batch_dropped_requests = [0]
-
 current_taxi_ride = 0
+num_batches = 0
 end_batch_times = np.arange(taxi_data['pickup_time'][0] + batching_duration, taxi_data['pickup_time'][-1], batching_duration)
-for num_batches, end_batch_time in enumerate(tqdm.tqdm(end_batch_times, total=max_batches if max_batches else len(end_batch_times))):
-    if max_batches and num_batches >= max_batches:
-        break
-    if end_batch_time < min_timestamp: continue
-    if end_batch_time >= max_timestamp: break
+end_batch_times = end_batch_times[end_batch_times >= min_timestamp - 30 * 60]  # Simulate slightly more.
+end_batch_times = end_batch_times[end_batch_times < max_timestamp + 30 * 60]   # Simulate slightly more.
+end_batch_times = end_batch_times[:max_batches]
 
+# Holds the end time of each batch.
+batch_times = []
+# Holds the waiting times for each passenger that requested a taxi during that batch.
+batch_waiting_times = []
+# Holds the number of available taxis at the end of the batch (these taxis will be dispatched).
+batch_num_available_taxis = []
+batch_total_taxis = []
+batch_num_requests = []
+batch_dropped_requests = []
+availability_offsets = []
+real_availability = []
+number_allocated = []
+
+for end_batch_time in tqdm.tqdm(end_batch_times):
     # Taxis that finished their ride should become available.
     newly_available_taxi = occupied_taxis.pop_available(end_batch_time)
     available_taxis |= newly_available_taxi
@@ -239,15 +252,22 @@ for num_batches, end_batch_time in enumerate(tqdm.tqdm(end_batch_times, total=ma
     ordered_taxis = list(available_taxis)
     ordered_requests = list(current_batch_requests)
     if version == 'optimal':
+        number_allocated.append(1)
         allocation_cost = util_vrp.get_allocation_cost(
             route_lengths, [t.reported_position for t in ordered_taxis],
             [r.pickup for r in ordered_requests])
-        _, taxi_indices, request_indices = util_vrp.get_routing_assignment(allocation_cost)
+        c, taxi_indices, request_indices = util_vrp.get_routing_assignment(allocation_cost)
     else:
-        _, taxi_indices, request_indices, _ = util_vrp.get_repeated_routing_assignment(
-            route_lengths, np.array([t.reported_position for t in ordered_taxis], dtype=np.uint32),
+        if current_batch_requests:
+            repeat = max(0, int(float(len(available_taxis)) / float(len(current_batch_requests)) - allocate_extra_only_when))
+        else:
+            repeat = 0
+        number_allocated.append(repeat + 1)
+        vehicle_node_pos = util_graph.GetNodePositions(graph, [t.reported_position for t in ordered_taxis])
+        c, taxi_indices, request_indices, _ = util_vrp.get_repeated_routing_assignment(
+            route_lengths, vehicle_node_pos,
             np.array([r.pickup for r in ordered_requests], dtype=np.uint32),
-            epsilon, nearest_neighbor_searcher, graph, repeat=num_of_allocated_vehicles - 1)
+            epsilon, nearest_neighbor_searcher, graph, repeat=repeat)
     # Ask taxis to pickup.
     waiting_times = collections.defaultdict(lambda: np.inf)  # Waiting times for each request.
     for taxi_index, request_index in zip(taxi_indices, request_indices):
@@ -259,6 +279,10 @@ for num_batches, end_batch_time in enumerate(tqdm.tqdm(end_batch_times, total=ma
         request = ordered_requests[request_index]
         waiting_times[request] = request.arbitrate(end_batch_time)
         for taxi in request.taxis:
+            if taxi.is_chosen:
+                if taxi.is_immediately_available:
+                    availability_offsets.append(taxi.reported_dropoff_time - taxi.dropoff_time)
+                    real_availability.append(taxi.is_immediately_available)
             occupied_taxis.push(taxi)
             available_taxis.remove(taxi)
         current_batch_requests.remove(request)
@@ -285,6 +309,9 @@ with open('data/simulation_%s.dat' % version, 'wb') as fp:
         'batch_num_requests': batch_num_requests,
         'batch_dropped_requests': batch_dropped_requests,
         'batch_waiting_times': batch_waiting_times,
+        'availability_offsets': availability_offsets,
+        'real_availability': real_availability,
+        'number_allocated': number_allocated,
     }))
 
 
@@ -293,13 +320,19 @@ batch_num_available_taxis = np.array(batch_num_available_taxis)
 batch_total_taxis = np.array(batch_total_taxis)
 batch_num_requests = np.array(batch_num_requests)
 batch_dropped_requests = np.array(batch_dropped_requests)
+number_allocated = np.array(number_allocated)
+
 
 def smooth_plot(x, y, window=30, stride=1):
     def rolling_window(a, window):
         shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
         strides = a.strides + (a.strides[-1],)
         return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
-    return np.mean(rolling_window(x, window), axis=-1)[::stride], np.nanmean(rolling_window(y, window), axis=-1)[::stride], np.nanstd(rolling_window(y, window), axis=-1)[::stride]
+    r = rolling_window(y, window)
+    only_nan = np.sum(np.isnan(r), axis=-1) == r.shape[-1]
+    r[only_nan, 0] = 0.
+    return np.mean(rolling_window(x, window), axis=-1)[::stride], np.nanmean(r, axis=-1)[::stride], np.nanstd(r, axis=-1)[::stride]
+
 
 fig, ax = plt.subplots()
 x, y, sy = smooth_plot(batch_times, batch_num_available_taxis, window=int(30 * 60 / batching_duration), stride=int(60 * 10 / batching_duration))
@@ -347,7 +380,7 @@ plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 fig, ax = plt.subplots()
 mean_times = []
-for t, w in zip(batch_times, batch_waiting_times):
+for w in batch_waiting_times:
     mean_times.append(np.mean(w) if w else np.nan)
 mean_times = np.array(mean_times)
 x, y, sy = smooth_plot(batch_times, mean_times, window=int(30 * 60 / batching_duration), stride=int(60 * 10 / batching_duration))
@@ -364,6 +397,33 @@ ax.set_ylabel('Average waiting time [s]')
 ax.set_xlim(left=datetime.datetime.fromtimestamp(min_timestamp), right=datetime.datetime.fromtimestamp(max_timestamp))
 ax.set_ylim(bottom=0)
 filename = 'figures/simulation_%s_waiting_time.eps' % version
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
+
+fig, ax = plt.subplots()
+avg_offset = np.mean(availability_offsets)
+p90 = np.percentile(availability_offsets, 90)
+plt.hist(availability_offsets, bins=20)
+l, t = plt.ylim()
+plt.plot([avg_offset, avg_offset], [l, t], 'k--', lw=2)
+plt.title('Average offset: %.3fs (90%% = %.3f) - Real availability: %d%%' % (avg_offset, p90, float(np.sum(real_availability)) / float(len(real_availability)) * 100.))
+filename = 'figures/simulation_%s_availability.eps' % version
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
+
+fig, ax = plt.subplots()
+x, y, sy = smooth_plot(batch_times, number_allocated, window=int(30 * 60 / batching_duration), stride=int(60 * 10 / batching_duration))
+t = [datetime.datetime.fromtimestamp(t) for t in x]
+plt.plot(t, y, 'b', lw=2)
+plt.fill_between(t, y + sy, y - sy, facecolor='b', alpha=0.5)
+ax.xaxis.set_major_locator(HourLocator(interval=4))
+ax.xaxis.set_minor_locator(HourLocator())
+ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+ax.fmt_xdata = DateFormatter('%H:%M')
+ax.grid(True)
+ax.set_xlabel('Time')
+ax.set_ylabel('Number of vehicles allocated per request')
+ax.set_xlim(left=datetime.datetime.fromtimestamp(min_timestamp), right=datetime.datetime.fromtimestamp(max_timestamp))
+ax.set_ylim(bottom=0)
+filename = 'figures/simulation_%s_allocated.eps' % version
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 plt.show(block=False)
