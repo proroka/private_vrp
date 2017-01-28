@@ -9,16 +9,17 @@ import time
 filenames = {
     'Non-private': 'data/simulation_optimal.dat',
     'Private single allocation': 'data/simulation_epsilon_0.02.dat',
-    'Private double allocation': 'data/simulation_epsilon_0.02_2.dat',
     'Private multi-allocation': 'data/simulation_epsilon_0.02_variable.dat',
 }
 
 colors = {
     'Non-private': 'r',
     'Private single allocation': 'g',
-    'Private double allocation': 'b',
-    'Private multi-allocation': 'k',
+    'Private multi-allocation': 'b',
 }
+
+order = ['Non-private', 'Private single allocation', 'Private multi-allocation']
+
 
 min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
 max_timestamp = min_timestamp + 24 * 60 * 60
@@ -30,6 +31,7 @@ AVAILABLE_TAXIS = 1
 TOTAL_TAXIS = 2
 REQUESTS = 3
 WAITING_TIME = 5
+WAITING_TIME_FULL = 6
 
 
 def load_data(filename):
@@ -50,7 +52,7 @@ def load_data(filename):
     for w in batch_waiting_times:
         mean_times.append(np.mean(w) if w else np.nan)
     mean_times = np.array(mean_times)
-    return batch_times, batch_num_available_taxis, batch_total_taxis, batch_num_requests, batch_dropped_requests, mean_times
+    return batch_times, batch_num_available_taxis, batch_total_taxis, batch_num_requests, batch_dropped_requests, mean_times, batch_waiting_times
 
 
 def smooth_plot(x, y, window=30, stride=1):
@@ -73,8 +75,8 @@ def plot_smooth_data(times, values, color, label):
 
 def create_time_figure(data, what, label):
     fig, ax = plt.subplots()
-    for k, v in data.iteritems():
-        print k
+    for k in order:
+        v = data[k]
         plot_smooth_data(v[TIME], v[what], colors[k], k)
     ax.xaxis.set_major_locator(HourLocator(interval=4))
     ax.xaxis.set_minor_locator(HourLocator())
@@ -88,13 +90,79 @@ def create_time_figure(data, what, label):
     plt.legend()
 
 
+def create_bar_figure(data, what, label):
+    common_times = None
+    for k, v in data.iteritems():
+        if common_times is None:
+            common_times = set(v[TIME])
+        else:
+            common_times &= set(v[TIME])
+            bar_values = []
+    for k in order:
+        all_values = []
+        v = data[k]
+        for i, t in enumerate(v[TIME]):
+            if t in common_times:
+                all_values.extend(v[what][i])
+        all_values = np.array(all_values)
+        bar_values.append(np.mean(all_values))
+    fig, ax = plt.subplots()
+    x_values = np.arange(len(bar_values))
+    width = 0.8
+    plt.bar(x_values - width / 2., bar_values, width=width)
+    plt.xticks(x_values, order, rotation='vertical')
+    ax.set_ylabel(label)
+    ax.set_ylim(bottom=0)
+    plt.tight_layout()
+
+
+def create_violin_figure(data, what, label, percentile_cut=5):
+    common_times = None
+    for k, v in data.iteritems():
+        if common_times is None:
+            common_times = set(v[TIME])
+        else:
+            common_times &= set(v[TIME])
+    ordered_values = []
+    for k in order:
+        all_values = []
+        v = data[k]
+        for i, t in enumerate(v[TIME]):
+            if t in common_times:
+                all_values.extend(v[what][i])
+        all_values = np.array(all_values)
+        p_low = np.percentile(all_values, percentile_cut)
+        p_high = np.percentile(all_values, 100 - percentile_cut)
+        all_values = all_values[np.logical_and(all_values >= p_low, all_values <= p_high)]
+        ordered_values.append(all_values)
+    fig, ax = plt.subplots()
+    sns.violinplot(data=ordered_values, cut=0)
+    plt.xticks(range(len(order)), order, rotation='vertical')
+    ax.set_ylim(bottom=0)
+    plt.tight_layout()
+
 data = {}
 for k, v in filenames.iteritems():
     data[k] = load_data(v)
 
 create_time_figure(data, WAITING_TIME, 'Waiting time')
+filename = 'figures/simulation_waiting_time.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
+
 create_time_figure(data, AVAILABLE_TAXIS, 'Available taxis')
+filename = 'figures/simulation_taxis.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
+
 create_time_figure(data, REQUESTS, 'Requests to serve')
+filename = 'figures/simulation_requests.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
+
+create_bar_figure(data, WAITING_TIME_FULL, 'Average waiting time')
+
+import seaborn as sns
+create_violin_figure(data, WAITING_TIME_FULL, 'Waiting time')
+filename = 'figures/simulation_aggregated_waiting_time.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 plt.show(block=False)
 

@@ -21,10 +21,10 @@ min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
 max_timestamp = min_timestamp + 24 * 60 * 60
 version = 'epsilon'
 epsilon = 0.02  # Only used when version is set to "epsilon".
-allocate_extra_only_when = 1.  # Allocate more than vehicles only when the number of available vehicles is larger than so many times the requests.
+allocate_extra_only_when = .5  # Allocate more than vehicles only when the number of available vehicles is larger than so many times the requests.
 
 if version == 'epsilon':
-    version = 'epsilon_%g_variable' % epsilon
+    version = 'epsilon_%g_variable_50' % epsilon
 
 # If not None, the taxi fleet changes as a function of time (up to the specified number of vehicles: num_vehicles).
 taxi_fleet_filename = 'data/taxi_fleet.dat'
@@ -187,8 +187,8 @@ current_batch_requests = set()
 current_taxi_ride = 0
 num_batches = 0
 end_batch_times = np.arange(taxi_data['pickup_time'][0] + batching_duration, taxi_data['pickup_time'][-1], batching_duration)
-end_batch_times = end_batch_times[end_batch_times >= min_timestamp - 30 * 60]  # Simulate slightly more.
-end_batch_times = end_batch_times[end_batch_times < max_timestamp + 30 * 60]   # Simulate slightly more.
+end_batch_times = end_batch_times[end_batch_times >= min_timestamp]
+end_batch_times = end_batch_times[end_batch_times < max_timestamp]
 end_batch_times = end_batch_times[:max_batches]
 
 # Holds the end time of each batch.
