@@ -61,6 +61,9 @@ def get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_
                                     previous_row_ind=None, previous_col_ind=None, previous_repeat=None, previous_vehicle_distances=None):
     assert isinstance(route_lengths, np.ndarray) and len(route_lengths.shape) == 2, 'This function requires a contiguous route length matrix. Use the graph_util.normalize() function.'
 
+    if len(vehicle_pos_noisy) == 0:
+        return 0., [], [], None
+
     # Precompute all vehicles random positions and the distance from every sample to every passenger.
     if previous_vehicle_distances is None:
         num_samples = 5
@@ -74,6 +77,9 @@ def get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_
         vehicle_sample_distances = np.array(vehicle_sample_distances)
     else:
         vehicle_sample_distances = previous_vehicle_distances
+
+    if len(passenger_node_ind) == 0:
+        return 0., [], [], vehicle_sample_distances
 
     # Holds the mapping from passenger to allocated vehicles.
     already_allocated_vehicles = []

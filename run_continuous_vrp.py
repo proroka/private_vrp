@@ -19,7 +19,12 @@ num_vehicles = 6000
 drop_passengers_after = 1200.  # 20 minutes.
 min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
 max_timestamp = min_timestamp + 24 * 60 * 60
-version = 'optimal'
+version = 'epsilon'
+epsilon = 0.02  # Only used when version is set to "epsilon".
+num_of_allocated_vehicles = 1  # Allocated vehicles per request (when possible).
+
+if version == 'epsilon':
+    version = 'epsilon_%g' % epsilon
 
 # If not None, the taxi fleet changes as a function of time (up to the specified number of vehicles: num_vehicles).
 taxi_fleet_filename = 'data/taxi_fleet.dat'
@@ -48,16 +53,26 @@ class Taxi(object):
     def __init__(self, identifier, initial_node):
         self.identifier = identifier
         self.true_position = initial_node
-        self.noise_offset = np.array([0, 0])  # TODO: Pick fixed random laplacian noise.
-        self.reported_position = initial_node  # TODO.
+        radius, theta = util_noise.sample_polar_laplace(epsilon, 1)
+        self.noise_offset = util_noise.polar2euclid(radius, theta)[0, :]
         self.reported_dropoff_time = None
+        self.dropoff_time = None
+        self.update_reported_position()
     def pickup(self, request, current_time):
-        # To do: take into account that there could already be 1 or more passengers lined up.
+        # If the taxi is still dropping someone, adjust current_time to the future.
+        # self.true_position holds the future dropoff location.
+        if self.dropoff_time and self.dropoff_time > current_time:
+            current_time = self.dropoff_time
         self.pickup_time = current_time + route_lengths[self.true_position][request.pickup]
-        self.reported_dropoff_time = self.pickup_time + route_lengths[request.pickup][request.dropoff]  # TODO.
-        self.true_position = request.dropoff
-        self.reported_position = self.true_position  # TODO: Add noise_offset.
+        # Here, the taxi merely makes a promise to pickup the passenger at that time.
         request.add_taxi(self)
+    def update_reported_position(self):
+        if version == 'optimal':
+            self.reported_position = self.true_position
+            return
+        xy = util_graph.GetNodePosition(graph, self.true_position) + self.noise_offset
+        nearest_node, _ = nearest_neighbor_searcher.Search(xy)
+        self.reported_position = nearest_node
     def __hash__(self):
         return hash(self.identifier)
     def __eq__(x, y):
@@ -77,11 +92,32 @@ class Request(object):
         self.taxis = []
     def add_taxi(self, taxi):
         self.taxis.append(taxi)
-    def arbitrate(self):
+    def arbitrate(self, current_time):
         taxi_ordered_by_pickup = sorted(self.taxis, key=lambda x: x.pickup_time)
-        # Taxis that are not used can update their true availability.
-        for t in taxi_ordered_by_pickup[1:]:
-            pass  # TODO.
+        # The first taxi will pickup the passenger.
+        first_taxi = taxi_ordered_by_pickup[0]
+        first_taxi.dropoff_time = first_taxi.pickup_time + route_lengths[self.pickup][self.dropoff]
+        first_taxi.true_position = self.dropoff
+        old_reported_position = first_taxi.reported_position
+        first_taxi.update_reported_position()
+        first_taxi.reported_dropoff_time = (current_time + route_lengths[old_reported_position][self.pickup] +
+                                            route_lengths[self.pickup][first_taxi.reported_position])
+        # Taxis that are not used go to the advertized position of the first taxi.
+        first_taxi_xy = util_graph.GetNodePosition(graph, first_taxi.reported_position)
+        for taxi in taxi_ordered_by_pickup[1:]:
+            old_true_position = taxi.true_position
+            if version == 'optimal':
+                taxi.true_position = first_taxi.reported_position
+            else:
+                taxi.true_position, _ = nearest_neighbor_searcher.Search(first_taxi_xy - taxi.noise_offset)
+            if taxi.dropoff_time and taxi.dropoff_time > current_time:
+                t = taxi.dropoff_time
+            else:
+                t = current_time
+            taxi.dropoff_time = t + route_lengths[old_true_position][taxi.true_position]
+            old_reported_position = taxi.reported_position
+            taxi.reported_position = first_taxi.reported_position
+            taxi.reported_dropoff_time = current_time + route_lengths[old_reported_position][self.pickup] + route_lengths[self.pickup][taxi.reported_position]
         return taxi_ordered_by_pickup[0].pickup_time - self.time
     def __hash__(self):
         return hash(self.identifier)
@@ -93,11 +129,16 @@ class Request(object):
 class PriorityQueue(object):
     def __init__(self):
         self._queue = []
+        self._set = set()
     def push(self, taxi):
         assert taxi.reported_dropoff_time is not None
+        assert taxi not in self._set
         heapq.heappush(self._queue, (taxi.reported_dropoff_time, taxi))
+        self._set.add(taxi)
     def pop(self):
-        return heapq.heappop(self._queue)[-1]
+        taxi = heapq.heappop(self._queue)[-1]
+        self._set.remove(taxi)
+        return taxi
     def peek(self):
         return self._queue[0][-1]
     def pop_available(self, current_time):
@@ -108,6 +149,8 @@ class PriorityQueue(object):
         return taxis
     def __len__(self):
         return len(self._queue)
+    def __contains__(self, taxi):
+        return taxi in self._set
 
 def get_taxi_fleet_size(current_time):
     if taxi_fleet_filename:
@@ -149,13 +192,21 @@ for num_batches, end_batch_time in enumerate(tqdm.tqdm(end_batch_times, total=ma
     if end_batch_time < min_timestamp: continue
     if end_batch_time >= max_timestamp: break
 
+    # Taxis that finished their ride should become available.
+    newly_available_taxi = occupied_taxis.pop_available(end_batch_time)
+    available_taxis |= newly_available_taxi
+    for t in newly_available_taxi:
+        max_taxi_identifier = max(t.identifier, max_taxi_identifier)
+
     # Increase fleet size if needed.
     new_taxi_count = get_taxi_fleet_size(end_batch_time)
     if new_taxi_count > taxi_count:
         for i in range(taxi_count, new_taxi_count):
-            if i in available_taxis:
+            if i in occupied_taxis:
                 continue
             max_taxi_identifier = max(max_taxi_identifier, i)
+            if i in available_taxis:
+                continue
             available_taxis.add(Taxi(i, taxi_initial_nodes[i]))
     taxi_count = new_taxi_count
     # Decrease fleet size if needed (taxis are only removed when available).
@@ -180,11 +231,6 @@ for num_batches, end_batch_time in enumerate(tqdm.tqdm(end_batch_times, total=ma
             continue
         current_batch_requests.add(Request(current_taxi_ride, start_time, u_node, v_node))
 
-    # Taxis that finished their ride should become available.
-    newly_available_taxi = occupied_taxis.pop_available(end_batch_time)
-    available_taxis |= newly_available_taxi
-    for t in newly_available_taxi:
-        max_taxi_identifier = max(t.identifier, i)
     batch_num_available_taxis.append(len(available_taxis))
     batch_total_taxis.append(len(available_taxis) + len(occupied_taxis))
     batch_num_requests.append(len(current_batch_requests))
@@ -192,10 +238,16 @@ for num_batches, end_batch_time in enumerate(tqdm.tqdm(end_batch_times, total=ma
     # Dispatch.
     ordered_taxis = list(available_taxis)
     ordered_requests = list(current_batch_requests)
-    allocation_cost = util_vrp.get_allocation_cost(
-        route_lengths, [t.reported_position for t in ordered_taxis],
-        [r.pickup for r in ordered_requests])
-    _, taxi_indices, request_indices = util_vrp.get_routing_assignment(allocation_cost)
+    if version == 'optimal':
+        allocation_cost = util_vrp.get_allocation_cost(
+            route_lengths, [t.reported_position for t in ordered_taxis],
+            [r.pickup for r in ordered_requests])
+        _, taxi_indices, request_indices = util_vrp.get_routing_assignment(allocation_cost)
+    else:
+        _, taxi_indices, request_indices, _ = util_vrp.get_repeated_routing_assignment(
+            route_lengths, np.array([t.reported_position for t in ordered_taxis], dtype=np.uint32),
+            np.array([r.pickup for r in ordered_requests], dtype=np.uint32),
+            epsilon, nearest_neighbor_searcher, graph, repeat=num_of_allocated_vehicles - 1)
     # Ask taxis to pickup.
     waiting_times = collections.defaultdict(lambda: np.inf)  # Waiting times for each request.
     for taxi_index, request_index in zip(taxi_indices, request_indices):
@@ -203,9 +255,9 @@ for num_batches, end_batch_time in enumerate(tqdm.tqdm(end_batch_times, total=ma
         request = ordered_requests[request_index]
         taxi.pickup(request, end_batch_time)
     # Arbitrate among taxis (when multiple allocations to the same request are made).
-    for request_index in request_indices:
+    for request_index in set(request_indices):
         request = ordered_requests[request_index]
-        waiting_times[request] = request.arbitrate()
+        waiting_times[request] = request.arbitrate(end_batch_time)
         for taxi in request.taxis:
             occupied_taxis.push(taxi)
             available_taxis.remove(taxi)
