@@ -31,6 +31,14 @@ def get_bounds(data, confidence=0.95):
     return m, l, u
 
 def get_colors(N):
+    if N == 1:
+        return ['r']
+    if N == 2:
+        return ['r', 'g']
+    if N == 3:
+        return ['r', 'g', 'b']
+    if N == 4:
+        return ['r', 'g', 'b', 'k']
     color_norm = matplotlib.colors.Normalize(vmin=0, vmax=N-1)
     scalar_map = matplotlib.cm.ScalarMappable(norm=color_norm, cmap='spectral')
     colors = []
@@ -44,7 +52,7 @@ print 'Plotting...'
 
 for num_vehicles in num_vehicles_list:
     # Create a new plot for different number of vehicles.
-    fig = plt.figure(figsize=(12, 6), frameon=False)
+    fig = plt.figure(figsize=(12, 5.5), frameon=False)
     colors = get_colors(len(repeats))
     print num_vehicles
 
@@ -69,7 +77,7 @@ for num_vehicles in num_vehicles_list:
         plt.fill_between(epsilons, lower_errors, upper_errors, color=colors[i], alpha=0.5)
 
         plt.subplot(122)
-        plt.plot(epsilons, ((means - mean_w_opt) / mean_w_opt) * 100., color=colors[i], linewidth=2, label='Repeat: %d' % repeat)
+        plt.plot(epsilons, ((means - mean_w_opt) / mean_w_opt) * 100., color=colors[i], linewidth=2, label='D = %d' % (repeat + 1))
 
     plt.subplot(121)
     ax = plt.gca()
@@ -91,7 +99,6 @@ for num_vehicles in num_vehicles_list:
     plt.ylabel('Waiting time increase')
     plt.grid('on')
     plt.legend()
-    plt.title('Number of vehicles: %d' % num_vehicles)
 
     filename = 'figures/waiting_time_increase_%d.eps' % num_vehicles
     plt.savefig(filename, format='eps', transparent=True, frameon=False)

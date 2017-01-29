@@ -9,16 +9,29 @@ import time
 filenames = {
     'Non-private': 'data/simulation_optimal.dat',
     'Private single allocation': 'data/simulation_epsilon_0.02.dat',
-    'Private multi-allocation': 'data/simulation_epsilon_0.02_variable.dat',
+    # 'Private multi-allocation (1)': 'data/simulation_epsilon_0.02_variable.dat',
+    # 'Private multi-allocation (0.5)': 'data/simulation_epsilon_0.02_variable_50.dat',
+    'Private multi-allocation': 'data/simulation_epsilon_0.02_variable_150.dat',
+    # 'Private multi-allocation (2.0)': 'data/simulation_epsilon_0.02_variable_200.dat',
 }
 
 colors = {
     'Non-private': 'r',
     'Private single allocation': 'g',
+    # 'Private multi-allocation (1)': 'b',
+    # 'Private multi-allocation (0.5)': 'c',
     'Private multi-allocation': 'b',
+    # 'Private multi-allocation (2.0)': 'k',
 }
 
-order = ['Non-private', 'Private single allocation', 'Private multi-allocation']
+order = [
+    'Non-private',
+    'Private single allocation',
+    # 'Private multi-allocation (1)',
+    # 'Private multi-allocation (0.5)',
+    'Private multi-allocation',
+    # 'Private multi-allocation (2.0)',
+]
 
 
 min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
@@ -98,18 +111,31 @@ def create_bar_figure(data, what, label):
         else:
             common_times &= set(v[TIME])
             bar_values = []
+    baseline = None
     for k in order:
         all_values = []
         v = data[k]
         for i, t in enumerate(v[TIME]):
             if t in common_times:
                 all_values.extend(v[what][i])
-        all_values = np.array(all_values)
-        bar_values.append(np.mean(all_values))
+        mean_value = np.mean(all_values)
+        if baseline is None:
+            baseline = mean_value
+        bar_values.append(mean_value)
     fig, ax = plt.subplots()
     x_values = np.arange(len(bar_values))
     width = 0.8
-    plt.bar(x_values - width / 2., bar_values, width=width)
+    plt.bar(x_values - width / 2., bar_values, width=width, color='lightskyblue')
+    font = {
+        'family': 'sans-serif',
+        'color':  'white',
+        'weight': 'bold',
+        'size': 24,
+        'horizontalalignment': 'center',
+        'verticalalignment': 'top',
+    }
+    for x, y in zip(x_values, bar_values):
+        plt.text(x, y - baseline * 0.1, '%d%%' % ((y / baseline - 1.) * 100.), fontdict=font)
     plt.xticks(x_values, order, rotation='vertical')
     ax.set_ylabel(label)
     ax.set_ylim(bottom=0)
@@ -158,10 +184,12 @@ filename = 'figures/simulation_requests.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 create_bar_figure(data, WAITING_TIME_FULL, 'Average waiting time')
+filename = 'figures/simulation_mean_waiting_time.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 import seaborn as sns
 create_violin_figure(data, WAITING_TIME_FULL, 'Waiting time')
-filename = 'figures/simulation_aggregated_waiting_time.eps'
+filename = 'figures/simulation_violin_waiting_time.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 plt.show(block=False)

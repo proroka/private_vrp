@@ -59,7 +59,7 @@ class NearestNeighborSearcher(object):
         return self.indices[indices], distances
 
     def SearchRadius(self, xy, dist=1.):
-        self.kdtree.query_ball_point(xy, r=dist)
+        return self.kdtree.query_ball_point(xy, r=dist)
 
     def SearchK(self, xy, k=1):
         return self.kdtree.query(xy, k=k)
