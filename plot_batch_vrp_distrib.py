@@ -19,7 +19,7 @@ import manhattan.data as manh_data
 
 #-------------------------------------
 # Load data
-filename = 'data/vrp_batch_real_distrib_s4.dat'
+filename = 'data/vrp_batch_real_distrib_s1.dat'
 
 
 with open(filename, 'rb') as fp:
@@ -38,7 +38,7 @@ RAND = 'random'
 # Plot
 print 'Plotting...'
 
-set_x_lim = 500
+set_x_lim = 300
 set_y_lim = 0.25
 
 max_value = max(np.max(w) for i, w in waiting_time.iteritems() if i != RAND)
@@ -47,7 +47,7 @@ for i, w in waiting_time.iteritems():
     print 'Mean, %s: %g' % (i, np.mean(w))
     if i == RAND:
             continue
-    fig = plt.figure(figsize=(6,6), frameon=False)
+    fig = plt.figure(figsize=(3,6), frameon=False)
     bins = np.linspace(-0.5, max_value+0.5, num_bins+1)
     stats = [np.mean(w)]
     fig_filename = 'figures/results_batch_real_distrib_%s.eps' % i
@@ -58,4 +58,8 @@ plt.show(block=False)
 raw_input('Hit ENTER to close figure')
 
 plt.close()
+
+
+
+
 
