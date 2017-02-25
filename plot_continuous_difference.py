@@ -8,28 +8,28 @@ import time
 
 filenames = {
     'Non-private': 'data/simulation_optimal.dat',
-    'Private single allocation': 'data/simulation_epsilon_0.02.dat',
+    'Private non-redundant': 'data/simulation_epsilon_0.02.dat',
     # 'Private multi-allocation (1)': 'data/simulation_epsilon_0.02_variable.dat',
     # 'Private multi-allocation (0.5)': 'data/simulation_epsilon_0.02_variable_50.dat',
-    'Private multi-allocation': 'data/simulation_epsilon_0.02_variable_150.dat',
+    'Private redundant': 'data/simulation_epsilon_0.02_variable_150.dat',
     # 'Private multi-allocation (2.0)': 'data/simulation_epsilon_0.02_variable_200.dat',
 }
 
 colors = {
-    'Non-private': 'r',
-    'Private single allocation': 'g',
+    'Non-private': '#e98c50',
+    'Private non-redundant': '#33a74d',
     # 'Private multi-allocation (1)': 'b',
     # 'Private multi-allocation (0.5)': 'c',
-    'Private multi-allocation': 'b',
+    'Private redundant': '#d03237',
     # 'Private multi-allocation (2.0)': 'k',
 }
 
 order = [
     'Non-private',
-    'Private single allocation',
+    'Private redundant',
+    'Private non-redundant',
     # 'Private multi-allocation (1)',
     # 'Private multi-allocation (0.5)',
-    'Private multi-allocation',
     # 'Private multi-allocation (2.0)',
 ]
 
@@ -37,12 +37,15 @@ order = [
 min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
 max_timestamp = min_timestamp + 24 * 60 * 60
 batching_duration = 20
+smoothing_window_mins = 10
+smoothing_window_stride = 10
 
 
 TIME = 0
 AVAILABLE_TAXIS = 1
 TOTAL_TAXIS = 2
 REQUESTS = 3
+DROPPED_REQUESTS = 4
 WAITING_TIME = 5
 WAITING_TIME_FULL = 6
 
@@ -80,7 +83,7 @@ def smooth_plot(x, y, window=30, stride=1):
 
 
 def plot_smooth_data(times, values, color, label):
-    x, y, sy = smooth_plot(times, values, window=int(30 * 60 / batching_duration), stride=int(60 * 10 / batching_duration))
+    x, y, sy = smooth_plot(times, values, window=int(smoothing_window_mins * 60. / batching_duration), stride=int(60. * smoothing_window_stride / batching_duration))
     t = [datetime.datetime.fromtimestamp(t) for t in x]
     plt.plot(t, y, color, lw=2, label=label)
     plt.fill_between(t, y + sy, y - sy, facecolor=color, alpha=0.5)
@@ -88,9 +91,13 @@ def plot_smooth_data(times, values, color, label):
 
 def create_time_figure(data, what, label):
     fig, ax = plt.subplots()
+    if what == DROPPED_REQUESTS:
+        print 'Number of dropped requests:'
     for k in order:
         v = data[k]
         plot_smooth_data(v[TIME], v[what], colors[k], k)
+        if what == DROPPED_REQUESTS:
+            print '  %s: %d ~= %g%%' % (k, np.sum(v[what]), np.sum(v[what]) / (11e6 / 30.) * 100.)
     ax.xaxis.set_major_locator(HourLocator(interval=4))
     ax.xaxis.set_minor_locator(HourLocator())
     ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
@@ -136,7 +143,7 @@ def create_bar_figure(data, what, label):
     }
     for x, y in zip(x_values, bar_values):
         plt.text(x, y - baseline * 0.1, '%d%%' % ((y / baseline - 1.) * 100.), fontdict=font)
-    plt.xticks(x_values, order, rotation='vertical')
+    plt.xticks(x_values, order)
     ax.set_ylabel(label)
     ax.set_ylim(bottom=0)
     plt.tight_layout()
@@ -150,6 +157,7 @@ def create_violin_figure(data, what, label, percentile_cut=5):
         else:
             common_times &= set(v[TIME])
     ordered_values = []
+    print 'Waiting time performance:'
     for k in order:
         all_values = []
         v = data[k]
@@ -157,14 +165,16 @@ def create_violin_figure(data, what, label, percentile_cut=5):
             if t in common_times:
                 all_values.extend(v[what][i])
         all_values = np.array(all_values)
+        print '  %s: %.3f +- %.3f [s]' % (k, np.mean(all_values), np.std(all_values))
         p_low = np.percentile(all_values, percentile_cut)
         p_high = np.percentile(all_values, 100 - percentile_cut)
         all_values = all_values[np.logical_and(all_values >= p_low, all_values <= p_high)]
         ordered_values.append(all_values)
     fig, ax = plt.subplots()
-    sns.violinplot(data=ordered_values, cut=0)
-    plt.xticks(range(len(order)), order, rotation='vertical')
-    ax.set_ylim(bottom=0)
+    sns.violinplot(data=ordered_values, cut=0, gridsize=100, palette=[colors[k] for k in order])
+    plt.xticks(range(len(order)), order)
+    ax.set_ylim(bottom=0, top=800)
+    ax.grid(True)
     plt.tight_layout()
 
 data = {}
@@ -183,11 +193,16 @@ create_time_figure(data, REQUESTS, 'Requests to serve')
 filename = 'figures/simulation_requests.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
+create_time_figure(data, DROPPED_REQUESTS, 'Dropped requests')
+filename = 'figures/simulation_dropped_requests.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
+
 create_bar_figure(data, WAITING_TIME_FULL, 'Average waiting time')
 filename = 'figures/simulation_mean_waiting_time.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 import seaborn as sns
+sns.reset_orig()
 create_violin_figure(data, WAITING_TIME_FULL, 'Waiting time')
 filename = 'figures/simulation_violin_waiting_time.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
