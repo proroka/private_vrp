@@ -166,14 +166,14 @@ def create_violin_figure(data, what, label, percentile_cut=5):
                 all_values.extend(v[what][i])
         all_values = np.array(all_values)
         print '  %s: %.3f +- %.3f [s]' % (k, np.mean(all_values), np.std(all_values))
-        p_low = np.percentile(all_values, percentile_cut)
-        p_high = np.percentile(all_values, 100 - percentile_cut)
-        all_values = all_values[np.logical_and(all_values >= p_low, all_values <= p_high)]
+        # p_low = np.percentile(all_values, percentile_cut)
+        # p_high = np.percentile(all_values, 100 - percentile_cut)
+        # all_values = all_values[np.logical_and(all_values >= p_low, all_values <= p_high)]
         ordered_values.append(all_values)
-    fig, ax = plt.subplots()
-    sns.violinplot(data=ordered_values, cut=0, gridsize=100, palette=[colors[k] for k in order])
+    fig, ax = plt.subplots(figsize=(8, 6 * .7))
+    sns.violinplot(data=ordered_values, cut=0, gridsize=1000, palette=[colors[k] for k in order])
     plt.xticks(range(len(order)), order)
-    ax.set_ylim(bottom=0, top=800)
+    ax.set_ylim(bottom=0, top=600)
     ax.grid(True)
     plt.tight_layout()
 

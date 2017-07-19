@@ -21,10 +21,10 @@ min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
 max_timestamp = min_timestamp + 24 * 60 * 60
 version = 'epsilon'
 epsilon = 0.02  # Only used when version is set to "epsilon".
-allocate_extra_only_when = 2.  # Allocate more than vehicles only when the number of available vehicles is larger than so many times the requests.
+allocate_extra_only_when = 1.5  # Allocate more than vehicles only when the number of available vehicles is larger than so many times the requests.
 
 if version == 'epsilon':
-    version = 'epsilon_%g_variable_200' % epsilon
+    version = 'epsilon_%g_variable_150' % epsilon
 
 # If not None, the taxi fleet changes as a function of time (up to the specified number of vehicles: num_vehicles).
 taxi_fleet_filename = 'data/taxi_fleet.dat'
