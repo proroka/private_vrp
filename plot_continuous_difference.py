@@ -7,11 +7,14 @@ import time
 
 
 filenames = {
-    'Non-private': 'data/simulation_optimal.dat',
-    'Private non-redundant': 'data/simulation_epsilon_0.02.dat',
+    # 'Non-private': 'data/simulation_optimal.dat',simulation_optimal_10min_8000max
+    'Non-private': 'data/simulation_optimal_10min_8000max.dat',
+    # 'Private non-redundant': 'data/simulation_epsilon_0.02.dat',
+    'Private non-redundant': 'data/simulation_epsilon_0.02_10min_8000max.dat',
     # 'Private multi-allocation (1)': 'data/simulation_epsilon_0.02_variable.dat',
     # 'Private multi-allocation (0.5)': 'data/simulation_epsilon_0.02_variable_50.dat',
-    'Private redundant': 'data/simulation_epsilon_0.02_variable_150.dat',
+    # 'Private redundant': 'data/simulation_epsilon_0.02_variable_150.dat',
+    'Private redundant': 'data/simulation_epsilon_0.02_variable_150_10min_8000max.dat',
     # 'Private multi-allocation (2.0)': 'data/simulation_epsilon_0.02_variable_200.dat',
 }
 
@@ -48,6 +51,7 @@ REQUESTS = 3
 DROPPED_REQUESTS = 4
 WAITING_TIME = 5
 WAITING_TIME_FULL = 6
+REDUNDANCY = 7
 
 
 def load_data(filename):
@@ -59,16 +63,22 @@ def load_data(filename):
     batch_num_requests = data['batch_num_requests']
     batch_dropped_requests = data['batch_dropped_requests']
     batch_waiting_times = data['batch_waiting_times']
+    if 'number_allocated' in data:
+      batch_redundancy = data['number_allocated']
+    else:
+      print 'There is no number_allocated data (i.e., D)'
+      batch_redundancy = [0.] * len(batch_times)
     batch_times = np.array(batch_times)
     batch_num_available_taxis = np.array(batch_num_available_taxis)
     batch_total_taxis = np.array(batch_total_taxis)
     batch_num_requests = np.array(batch_num_requests)
     batch_dropped_requests = np.array(batch_dropped_requests)
+    batch_redundancy = np.array(batch_redundancy).astype(np.float32)
     mean_times = []
     for w in batch_waiting_times:
         mean_times.append(np.mean(w) if w else np.nan)
     mean_times = np.array(mean_times)
-    return batch_times, batch_num_available_taxis, batch_total_taxis, batch_num_requests, batch_dropped_requests, mean_times, batch_waiting_times
+    return batch_times, batch_num_available_taxis, batch_total_taxis, batch_num_requests, batch_dropped_requests, mean_times, batch_waiting_times, batch_redundancy
 
 
 def smooth_plot(x, y, window=30, stride=1):
@@ -82,11 +92,17 @@ def smooth_plot(x, y, window=30, stride=1):
     return np.mean(rolling_window(x, window), axis=-1)[::stride], np.nanmean(r, axis=-1)[::stride], np.nanstd(r, axis=-1)[::stride]
 
 
-def plot_smooth_data(times, values, color, label):
+def plot_smooth_data(times, values, color, label, ax=None):
     x, y, sy = smooth_plot(times, values, window=int(smoothing_window_mins * 60. / batching_duration), stride=int(60. * smoothing_window_stride / batching_duration))
     t = [datetime.datetime.fromtimestamp(t) for t in x]
-    plt.plot(t, y, color, lw=2, label=label)
-    plt.fill_between(t, y + sy, y - sy, facecolor=color, alpha=0.5)
+    if ax is None:
+      plt.plot(t, y, color, lw=2, label=label)
+    else:
+      ax.plot(t, y, color, lw=2, label=label)
+    if ax is None:
+      plt.fill_between(t, y + sy, y - sy, facecolor=color, alpha=0.5)
+    else:
+      ax.fill_between(t, y + sy, y - sy, facecolor=color, alpha=0.5)
 
 
 def create_time_figure(data, what, label):
@@ -108,6 +124,27 @@ def create_time_figure(data, what, label):
     ax.set_xlim(left=datetime.datetime.fromtimestamp(min_timestamp), right=datetime.datetime.fromtimestamp(max_timestamp))
     ax.set_ylim(bottom=0)
     plt.legend()
+
+
+def create_multi_time_figure(data, what, label, colors, k):
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+    axes = [ax1, ax2]
+    assert len(what) == 2, 'Can only plot 2 values'
+    for w, l, c, ax in zip(what, label, colors, axes)[:2]:
+      v = data[k]
+      plot_smooth_data(v[TIME], v[w], c, l, ax=ax)
+      ax.set_ylabel(l)
+      ax.set_ylim(bottom=0)
+      for tl in ax.get_yticklabels():
+        tl.set_color(c)
+    ax1.xaxis.set_major_locator(HourLocator(interval=4))
+    ax1.xaxis.set_minor_locator(HourLocator())
+    ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+    ax1.fmt_xdata = DateFormatter('%H:%M')
+    ax1.grid(True)
+    ax1.set_xlabel('Time')
+    ax1.set_xlim(left=datetime.datetime.fromtimestamp(min_timestamp), right=datetime.datetime.fromtimestamp(max_timestamp))
 
 
 def create_bar_figure(data, what, label):
@@ -197,9 +234,18 @@ create_time_figure(data, DROPPED_REQUESTS, 'Dropped requests')
 filename = 'figures/simulation_dropped_requests.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
+create_time_figure(data, REDUNDANCY, 'D')
+filename = 'figures/simulation_redundancy.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
+
 create_bar_figure(data, WAITING_TIME_FULL, 'Average waiting time')
 filename = 'figures/simulation_mean_waiting_time.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
+
+create_multi_time_figure(data, [REDUNDANCY, WAITING_TIME], ['D', 'Waiting time'], ['#e98c50', '#33a74d'], 'Private redundant')
+filename = 'figures/simulation_waiting_time_vs_redundancy.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
+
 
 import seaborn as sns
 sns.reset_orig()

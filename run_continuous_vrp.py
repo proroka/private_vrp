@@ -15,16 +15,20 @@ import utilities.noise as util_noise
 import utilities.vrp as util_vrp
 import manhattan.data as manh_data
 
-num_vehicles = 6000
-drop_passengers_after = 1200.  # 20 minutes.
+num_vehicles = 8000  # Was 6000 originally.
+drop_passengers_after = 600.  # Was 20 minutes originally.
 min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
 max_timestamp = min_timestamp + 24 * 60 * 60
 version = 'epsilon'
+version_info = '10min_8000max'
 epsilon = 0.02  # Only used when version is set to "epsilon".
 allocate_extra_only_when = 1.5  # Allocate more than vehicles only when the number of available vehicles is larger than so many times the requests.
+non_redundant = True  # Only used when version is set to "epsilon"
 
 if version == 'epsilon':
-    version = 'epsilon_%g_variable_150' % epsilon
+    version += '_%g' % epsilon
+    if not non_redundant:
+        version += '_variable_%d' % int(allocate_extra_only_when * 100)
 
 # If not None, the taxi fleet changes as a function of time (up to the specified number of vehicles: num_vehicles).
 taxi_fleet_filename = 'data/taxi_fleet.dat'
@@ -258,7 +262,7 @@ for end_batch_time in tqdm.tqdm(end_batch_times):
             [r.pickup for r in ordered_requests])
         c, taxi_indices, request_indices = util_vrp.get_routing_assignment(allocation_cost)
     else:
-        if current_batch_requests:
+        if current_batch_requests and not non_redundant:
             repeat = max(0, int(float(len(available_taxis)) / float(len(current_batch_requests)) - allocate_extra_only_when))
         else:
             repeat = 0
@@ -301,7 +305,7 @@ for end_batch_time in tqdm.tqdm(end_batch_times):
     batch_waiting_times.append(waiting_times.values())
     batch_times.append(end_batch_time)
 
-with open('data/simulation_%s.dat' % version, 'wb') as fp:
+with open('data/simulation_%s_%s.dat' % (version, version_info), 'wb') as fp:
     fp.write(msgpack.packb({
         'batch_times': batch_times,
         'batch_num_available_taxis': batch_num_available_taxis,
