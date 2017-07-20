@@ -40,8 +40,8 @@ order = [
 min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
 max_timestamp = min_timestamp + 24 * 60 * 60
 batching_duration = 20
-smoothing_window_mins = 10
-smoothing_window_stride = 10
+smoothing_window_mins = 5 #10
+smoothing_window_stride = 5 #10
 
 
 TIME = 0
@@ -127,7 +127,8 @@ def create_time_figure(data, what, label):
 
 
 def create_multi_time_figure(data, what, label, colors, k):
-    fig, ax1 = plt.subplots()
+    #fig, ax1 = plt.subplots()
+    fig, ax1 = plt.subplots(figsize=(8, 6 * .7))
     ax2 = ax1.twinx()
     axes = [ax1, ax2]
     assert len(what) == 2, 'Can only plot 2 values'
@@ -135,9 +136,10 @@ def create_multi_time_figure(data, what, label, colors, k):
       v = data[k]
       plot_smooth_data(v[TIME], v[w], c, l, ax=ax)
       ax.set_ylabel(l)
-      ax.set_ylim(bottom=0)
+      
       for tl in ax.get_yticklabels():
         tl.set_color(c)
+    ax1.set_ylim(bottom=0, top=5)
     ax1.xaxis.set_major_locator(HourLocator(interval=4))
     ax1.xaxis.set_minor_locator(HourLocator())
     ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
@@ -148,12 +150,13 @@ def create_multi_time_figure(data, what, label, colors, k):
 
 
 def create_special_scatter_figure(data):
+  fig, ax = plt.subplots()
   for k in order:
     y = data[k][WAITING_TIME]
     x = (data[k][TOTAL_TAXIS] - data[k][AVAILABLE_TAXIS]) / data[k][TOTAL_TAXIS]
     plt.scatter(x, y, color=colors[k], alpha=0.5, label=k)
   plt.xlim(left=0.4, right=1.)
-  plt.ylim(bottom=0., top=600.)
+  plt.ylim(bottom=0., top=800.)
   plt.xlabel('Occupied ratio')
   plt.ylabel('Waiting time')
   plt.legend()
@@ -227,29 +230,29 @@ data = {}
 for k, v in filenames.iteritems():
     data[k] = load_data(v)
 
-create_time_figure(data, WAITING_TIME, 'Waiting time')
-filename = 'figures/simulation_waiting_time.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+# create_time_figure(data, WAITING_TIME, 'Waiting time')
+# filename = 'figures/simulation_waiting_time.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-create_time_figure(data, AVAILABLE_TAXIS, 'Available taxis')
-filename = 'figures/simulation_taxis.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+# create_time_figure(data, AVAILABLE_TAXIS, 'Available taxis')
+# filename = 'figures/simulation_taxis.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-create_time_figure(data, REQUESTS, 'Requests to serve')
-filename = 'figures/simulation_requests.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+# create_time_figure(data, REQUESTS, 'Requests to serve')
+# filename = 'figures/simulation_requests.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-create_time_figure(data, DROPPED_REQUESTS, 'Dropped requests')
-filename = 'figures/simulation_dropped_requests.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+# create_time_figure(data, DROPPED_REQUESTS, 'Dropped requests')
+# filename = 'figures/simulation_dropped_requests.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-create_time_figure(data, REDUNDANCY, 'D')
-filename = 'figures/simulation_redundancy.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+# create_time_figure(data, REDUNDANCY, 'D')
+# filename = 'figures/simulation_redundancy.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-create_bar_figure(data, WAITING_TIME_FULL, 'Average waiting time')
-filename = 'figures/simulation_mean_waiting_time.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+# create_bar_figure(data, WAITING_TIME_FULL, 'Average waiting time')
+# filename = 'figures/simulation_mean_waiting_time.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 create_multi_time_figure(data, [REDUNDANCY, WAITING_TIME], ['D', 'Waiting time'], ['#e98c50', '#33a74d'], 'Private redundant')
 filename = 'figures/simulation_waiting_time_vs_redundancy.eps'

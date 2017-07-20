@@ -98,13 +98,16 @@ def smooth_plot(x, y, window=30, stride=1):
     return np.mean(rolling_window(x, window), axis=-1)[::stride], np.nanmean(rolling_window(y, window), axis=-1)[::stride], np.nanstd(rolling_window(y, window), axis=-1)[::stride]
 
 
-fig, ax1 = plt.subplots()
+#fig, ax1 = plt.subplots()
+fig, ax1 = plt.subplots(figsize=(8, 6 * .7))
 ax2 = ax1.twinx()
+colors = ['#e98c50', '#33a74d']
+
 num_taxis = np.interp(requests_time, time, num_taxis)
 x, y, sy = smooth_plot(requests_time, num_taxis, window=int(30 * 60 / batching_duration), stride=int(10 * 60 / batching_duration))
 t = [datetime.datetime.fromtimestamp(t) for t in x]
-ax1.plot(t, y, 'b-')
-ax1.fill_between(t, y + sy, y - sy, facecolor='b', alpha=0.5)
+ax1.plot(t, y, color=colors[0], linestyle='solid')
+ax1.fill_between(t, y + sy, y - sy, facecolor=colors[0], alpha=0.5)
 
 # Save x and y.
 with open(filename, 'wb') as fp:
@@ -112,8 +115,8 @@ with open(filename, 'wb') as fp:
 
 x, y, sy = smooth_plot(requests_time, num_simultaneuous_requests, window=int(30 * 60 / batching_duration), stride=int(10 * 60 / batching_duration))
 t = [datetime.datetime.fromtimestamp(t) for t in x]
-ax2.plot(t, y, 'g-')
-ax2.fill_between(t, y + sy, y - sy, facecolor='g', alpha=0.5)
+ax2.plot(t, y, color=colors[1], linestyle='solid')
+ax2.fill_between(t, y + sy, y - sy, facecolor=colors[1], alpha=0.5)
 ax1.xaxis.set_major_locator(HourLocator(interval=4))
 ax1.xaxis.set_minor_locator(HourLocator())
 ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
@@ -121,14 +124,14 @@ ax1.fmt_xdata = DateFormatter('%H:%M')
 ax1.grid(True)
 ax1.set_ylim(bottom=0, top=5500)
 ax1.set_xlim(left=datetime.datetime.fromtimestamp(min_timestamp), right=datetime.datetime.fromtimestamp(max_timestamp))
-ax1.set_xlabel('Time')
-ax1.set_ylabel('Occupied taxis', color='b')
+ax1.set_xlabel('T') # Time
+ax1.set_ylabel('O', color=colors[0]) # Occupied taxis
 for tl in ax1.get_yticklabels():
-    tl.set_color('b')
-ax2.set_ylabel('Number of requests per batch', color='g')
+    tl.set_color(colors[0])
+ax2.set_ylabel('R', color=colors[1]) # Number of requests per batch
 ax2.set_ylim(bottom=0, top=400)
 for tl in ax2.get_yticklabels():
-    tl.set_color('g')
+    tl.set_color(colors[1])
 
 filename = 'figures/manhattan_taxi_analysis.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
