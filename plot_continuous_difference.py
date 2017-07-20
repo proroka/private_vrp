@@ -68,11 +68,11 @@ def load_data(filename):
     else:
       print 'There is no number_allocated data (i.e., D)'
       batch_redundancy = [0.] * len(batch_times)
-    batch_times = np.array(batch_times)
-    batch_num_available_taxis = np.array(batch_num_available_taxis)
-    batch_total_taxis = np.array(batch_total_taxis)
-    batch_num_requests = np.array(batch_num_requests)
-    batch_dropped_requests = np.array(batch_dropped_requests)
+    batch_times = np.array(batch_times).astype(np.float32)
+    batch_num_available_taxis = np.array(batch_num_available_taxis).astype(np.float32)
+    batch_total_taxis = np.array(batch_total_taxis).astype(np.float32)
+    batch_num_requests = np.array(batch_num_requests).astype(np.float32)
+    batch_dropped_requests = np.array(batch_dropped_requests).astype(np.float32)
     batch_redundancy = np.array(batch_redundancy).astype(np.float32)
     mean_times = []
     for w in batch_waiting_times:
@@ -147,6 +147,18 @@ def create_multi_time_figure(data, what, label, colors, k):
     ax1.set_xlim(left=datetime.datetime.fromtimestamp(min_timestamp), right=datetime.datetime.fromtimestamp(max_timestamp))
 
 
+def create_special_scatter_figure(data):
+  for k in order:
+    y = data[k][WAITING_TIME]
+    x = (data[k][TOTAL_TAXIS] - data[k][AVAILABLE_TAXIS]) / data[k][TOTAL_TAXIS]
+    plt.scatter(x, y, color=colors[k], alpha=0.5, label=k)
+  plt.xlim(left=0.4, right=1.)
+  plt.ylim(bottom=0., top=600.)
+  plt.xlabel('Occupied ratio')
+  plt.ylabel('Waiting time')
+  plt.legend()
+
+
 def create_bar_figure(data, what, label):
     common_times = None
     for k, v in data.iteritems():
@@ -202,10 +214,7 @@ def create_violin_figure(data, what, label, percentile_cut=5):
             if t in common_times:
                 all_values.extend(v[what][i])
         all_values = np.array(all_values)
-        print '  %s: %.3f +- %.3f [s]' % (k, np.mean(all_values), np.std(all_values))
-        # p_low = np.percentile(all_values, percentile_cut)
-        # p_high = np.percentile(all_values, 100 - percentile_cut)
-        # all_values = all_values[np.logical_and(all_values >= p_low, all_values <= p_high)]
+        print '  %s: %.3f +- %.3f [s]  median: %.3f' % (k, np.mean(all_values), np.std(all_values), np.median(all_values))
         ordered_values.append(all_values)
     fig, ax = plt.subplots(figsize=(8, 6 * .7))
     sns.violinplot(data=ordered_values, cut=0, gridsize=1000, palette=[colors[k] for k in order])
@@ -246,6 +255,9 @@ create_multi_time_figure(data, [REDUNDANCY, WAITING_TIME], ['D', 'Waiting time']
 filename = 'figures/simulation_waiting_time_vs_redundancy.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
+create_special_scatter_figure(data)
+filename = 'figures/simulation_scatter_occupied.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 import seaborn as sns
 sns.reset_orig()
