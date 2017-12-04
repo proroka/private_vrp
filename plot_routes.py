@@ -20,6 +20,8 @@ import utilities.probabilistic as util_prob
 import manhattan.data as manh_data
 
 
+fig_fn_base = 'figures/routes'
+
 use_small_graph = True
 use_real_taxi_data = False
 must_recompute = False
@@ -30,10 +32,14 @@ nearest_neighbor_searcher = util_graph.NearestNeighborSearcher(graph)
 taxi_data = manh_data.LoadTaxiData(graph, synthetic_rides=not use_real_taxi_data, must_recompute=must_recompute,
                                    num_synthetic_rides=100, max_rides=1000000)
 
+
 # Graph data structure is modified to accound for empirical travel time (updates 'time' attribute)
 manh_data.UpdateEdgeTime(graph, taxi_data, nearest_neighbor_searcher, must_recompute=must_recompute)
 
 route_lengths = manh_data.LoadShortestPathData(graph, must_recompute=False)
+# Normalize graph
+graph, route_lengths, nearest_neighbor_searcher = util_graph.normalize(graph, route_lengths)
+
 
 # Plot road network.
 fig, ax = ox.plot_graph(graph, show=False, close=False)
@@ -73,7 +79,7 @@ for i in rand_ind:
     util_graph.PlotRoute(graph, route, ax)
     print 'Distance from %s to %s: %g [m]' % (origin_node, destination_node, distance)
 
-filename = 'figures/routes_map_2.eps'
+filename = fig_fn_base + '.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 plt.show()

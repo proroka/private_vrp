@@ -57,6 +57,27 @@ def get_updated_allocation_cost(vehicle_available, passenger_vehicles, vehicle_d
     allocation_cost = np.mean(np.min(distances, axis=-2), axis=-1)
     return allocation_cost
 
+
+def get_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph):
+
+    # Assign first round optimally, with Hungarian method
+    allocation_cost = probabilistic.get_allocation_cost_noisy(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
+    cost, row_ind, col_ind = get_routing_assignment(allocation_cost)
+
+    # Get remaining vehicles
+    # already_allocated_vehicles = []
+    # for _ in passenger_node_ind:
+    #     already_allocated_vehicles.append([])
+    # for v, p in zip(row_ind, col_ind):
+    #     already_allocated_vehicles[p].append(v)
+    # vehicle_indices = list(set(range(len(vehicle_pos_noisy))) - set(previous_row_ind))
+    
+
+    # Assign remaining vehicles greedily
+
+    return cost, row_ind, col_ind
+
+
 def get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeat=1,
                                     previous_row_ind=None, previous_col_ind=None, previous_repeat=None, previous_vehicle_distances=None):
     assert isinstance(route_lengths, np.ndarray) and len(route_lengths.shape) == 2, 'This function requires a contiguous route length matrix. Use the graph_util.normalize() function.'
@@ -64,7 +85,7 @@ def get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_
     if len(vehicle_pos_noisy) == 0:
         return 0., [], [], None
 
-    # Precompute all vehicles random positions and the distance from every sample to every passenger.
+    # Precompute all vehicles' random positions and the distance from every sample to every passenger.
     if previous_vehicle_distances is None:
         num_samples = 100
         vehicle_sample_distances = []

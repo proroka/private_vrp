@@ -36,6 +36,16 @@ def create_grid_map(grid_size=10, edge_length=100., default_speed=10.):
                      oneway=False, speed=default_speed, time=edge_length / default_speed)
     return graph
 
+def grid_map_route_lengths(graph):
+    route_lengths = dict(nx.shortest_path_length(graph, weight='time'))
+    # We need to convert all defaultdict to dict before saving.
+    for k, v in route_lengths.iteritems():
+        route_lengths[k] = dict((m, n) for m, n in v.iteritems())
+    # with open(route_lengths_filename, 'wb') as fp:
+    #     fp.write(msgpack.packb(route_lengths))
+    
+    return route_lengths
+
 class NearestNeighborSearcher(object):
 
     def __init__(self, graph):

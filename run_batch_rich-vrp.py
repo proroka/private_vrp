@@ -35,7 +35,7 @@ set_seed = False
 if set_seed:
     np.random.seed(1019)
 
-# Simulation
+# Save simulation data and figures
 filename = 'data/rich-vrp_batch_s0.dat'
 fig_fn_base = 'figures/rich-vrp_batch_s0'
 
@@ -70,7 +70,7 @@ print 'Num nodes:', num_nodes
 print 'Num vehicles:', num_vehicles
 print 'Num passengers:', num_passengers
 
-# Compute occurence of pick-up and drop-off locations
+# Compute occurence of pick-up and drop-off locations -> used to sample realistic pick-up and drop-off locations
 nearest_pickup_nodes, dist = nearest_neighbor_searcher.Search(taxi_data['pickup_xy'])
 nearest_dropoff_nodes, dist = nearest_neighbor_searcher.Search(taxi_data['dropoff_xy'])
 # Count probabilities of dropoff nodes
@@ -108,21 +108,26 @@ for it in range(num_iter):
     print 'Optimal allocation took %.2fms' % ((time.time() - s) * 1000.)
     waiting_time[OPT].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
 
-    # Epsilon, multi-allocation.
+    # For each noise value epsilon, generate set-greedy allocation.
     for epsilon in epsilons:
         # Generate noisy vehicle positions
         vehicle_node_pos = util_graph.GetNodePositions(graph, vehicle_node_ind)
         _, vehicle_pos_noisy = util_noise.add_noise(vehicle_node_pos, nearest_neighbor_searcher, epsilon, noise_model)
+        # Generate noisy passenger positions
+        passenger_node_pos = util_graph.GetNodePositions(graph, passenger_node_ind)
+        _, passenger_pos_noisy = util_noise.add_noise(passenger_node_pos, nearest_neighbor_searcher, epsilon, noise_model)
 
         print 'Computing suboptimal VRP, using expected cost (epsilon = %g)...' % epsilon
         s = time.time()
+
+        # Set-greedy allocation strategy
         cost, row_ind, col_ind, vd = util_vrp.get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeat=0)
         print 'Suboptimal allocation took %.2fms' % ((time.time() - s) * 1000.)
         waiting_time['subopt_%g_0' % epsilon].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
         previous_repeat = 0
         for repeat in repeats:
             s = time.time()
-            cost, row_ind, col_ind, _ = util_vrp.get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, nearest_neighbor_searcher, graph, repeat=repeat,
+            cost, row_ind, col_ind, _ = util_vrp.get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeat=repeat,
                                                                                  previous_row_ind=row_ind, previous_col_ind=col_ind, previous_repeat=previous_repeat, previous_vehicle_distances=vd)
             print 'Extra suboptimal allocation took %.2fms' % ((time.time() - s) * 1000.)
             waiting_time['subopt_%g_%d' % (epsilon, repeat)].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
@@ -139,10 +144,10 @@ with open(filename, 'wb') as fp:
 # Plot
 if plot_on:
     print 'Plotting...'
-    set_x_lim = 500
-    set_y_lim = 0.25
+    set_x_lim = None #500
+    set_y_lim = None #0.25
     max_value = max(np.max(w) for i, w in waiting_time.iteritems() if i != RAND)
-    num_bins = 100
+    num_bins = 30
     for i, w in waiting_time.iteritems():
         print 'Mean, %s: %g' % (i, np.mean(w))
         if i == RAND:
