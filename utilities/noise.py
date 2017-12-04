@@ -16,11 +16,20 @@ import scipy.special as spc
 # Functions
 
 # Add noise to positions
-def add_noise(point_locations, nearest_neighbor_searcher, epsilon):
-    # Noisy positions
-    radius, theta = sample_polar_laplace(epsilon, point_locations.shape[0])
-    noise_vector = polar2euclid(radius, theta)
-    noisy_point_locations = point_locations + noise_vector
+def add_noise(point_locations, nearest_neighbor_searcher, epsilon, noise_model):
+    
+    # Compute noisy positions according to distribution
+    if noise_model == 'gauss':
+        noise_vector = np.random.normal(0.0, epsilon, (point_locations.shape[0],2))
+        noisy_point_locations = point_locations + noise_vector
+
+    elif noise_model == 'laplace': 
+        radius, theta = sample_polar_laplace(epsilon, point_locations.shape[0])
+        noise_vector = polar2euclid(radius, theta)
+        noisy_point_locations = point_locations + noise_vector
+
+    else: print 'Noise model not known.'
+
     # Find nearest node
     nearest_nodes, dist = nearest_neighbor_searcher.Search(noisy_point_locations)
 

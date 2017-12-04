@@ -9,6 +9,8 @@ import manhattan.data as manh_data
 
 #-------------------------------------
 
+noise_model = 'gauss'
+
 use_small_graph = True
 graph = manh_data.LoadMapData(use_small_graph=use_small_graph)
 nearest_neighbor_searcher = util_graph.NearestNeighborSearcher(graph)
@@ -16,7 +18,9 @@ nearest_neighbor_searcher = util_graph.NearestNeighborSearcher(graph)
 flatiron_lat_long = (40.741063, -73.989701)
 flatiron_xy = util_graph.FromLatLong(flatiron_lat_long)
 
-epsilons = [0.005, 0.01, 0.02, 0.05, 0.1]
+if noise_model == 'laplace': epsilons = [0.005, 0.01, 0.02, 0.05, 0.1]
+elif noise_model == 'gauss': epsilons = [10.0, 30.0, 60.0]
+
 print epsilons
 num_samples = 100
 point_locations = np.ones((num_samples, 2)) * flatiron_xy
@@ -34,7 +38,7 @@ for epsilon in epsilons:
   print 'Closest node to Flatiron is %d : %g [m] away' % (flatiron_node, distance)
 
   # Get noisy points and indeces
-  nearest_nodes, noisy_point_locations = util_noise.add_noise(point_locations, nearest_neighbor_searcher, epsilon)
+  nearest_nodes, noisy_point_locations = util_noise.add_noise(point_locations, nearest_neighbor_searcher, epsilon, noise_model)
 
   # Count occurences of nodes, scale size of plot point
   count = dict()
@@ -51,8 +55,12 @@ for epsilon in epsilons:
   nearest_nodes_xy = util_graph.GetNodePositions(graph, key_node)
   plt.scatter(nearest_nodes_xy[:, 0], nearest_nodes_xy[:, 1], color='red', s=noisy_points_size, zorder=10)
 
-  filename = 'figures/manhattan_noisy_%.3f.eps' % epsilon
+  filename = 'figures/manhattan_%s_noisy_%.3f.eps' % (noise_model, epsilon)
   plt.savefig(filename, format='eps', transparent=True, frameon=False)
   plt.title('Epsilon = %g' % epsilon)
 
-plt.show()
+
+plt.show(block=False)
+raw_input('Hit ENTER to close figure')
+plt.close()
+

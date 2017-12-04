@@ -57,7 +57,7 @@ def get_updated_allocation_cost(vehicle_available, passenger_vehicles, vehicle_d
     allocation_cost = np.mean(np.min(distances, axis=-2), axis=-1)
     return allocation_cost
 
-def get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, nearest_neighbor_searcher, graph, repeat=1,
+def get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeat=1,
                                     previous_row_ind=None, previous_col_ind=None, previous_repeat=None, previous_vehicle_distances=None):
     assert isinstance(route_lengths, np.ndarray) and len(route_lengths.shape) == 2, 'This function requires a contiguous route length matrix. Use the graph_util.normalize() function.'
 
@@ -70,7 +70,7 @@ def get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_
         vehicle_sample_distances = []
         for p in vehicle_pos_noisy:
             point_locations = np.ones((num_samples, 2)) * p
-            vehicle_node_ind_noisy, _ = noise.add_noise(point_locations, nearest_neighbor_searcher, epsilon)
+            vehicle_node_ind_noisy, _ = noise.add_noise(point_locations, nearest_neighbor_searcher, epsilon, noise_model)
             V = np.broadcast_arrays(np.ones((passenger_node_ind.shape[0], 1)), vehicle_node_ind_noisy)[1]
             P = np.broadcast_arrays(np.ones((vehicle_node_ind_noisy.shape[0], 1)), passenger_node_ind)[1]
             vehicle_sample_distances.append(route_lengths[V, P.T])
