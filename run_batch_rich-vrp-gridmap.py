@@ -13,8 +13,6 @@ import utilities.plot as util_plot
 import manhattan.data as manh_data
 
 
-# stet
-
 #-------------------------------------
 # Global settings
 
