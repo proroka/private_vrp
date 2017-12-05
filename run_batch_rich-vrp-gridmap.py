@@ -82,6 +82,7 @@ for it in range(num_iter):
     vehicle_node_ind = np.random.choice(graph.nodes(), size=num_vehicles, replace=True)
     passenger_node_ind = np.random.choice(graph.nodes(), size=num_passengers, replace=True)
 
+
     # Non-noisy (true) allocation
     true_allocation_cost = util_vrp.get_allocation_cost(route_lengths, vehicle_node_ind, passenger_node_ind)
     allocation_cost = true_allocation_cost
@@ -102,7 +103,7 @@ for it in range(num_iter):
 
         # Compute element-greedy allocation
         print 'Computing element-greedy allocation, using expected cost (epsilon = %g)...' % epsilon
-        #cost, row_ind, col_ind = util_vrp.get_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
+        #cost, row_ind, col_ind = util_vrp.get_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, vehicle_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
         #waiting_time[EG+'_%g_0' % epsilon].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
         
         # Compute set-greedy allocation

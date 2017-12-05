@@ -60,20 +60,29 @@ def get_updated_allocation_cost(vehicle_available, passenger_vehicles, vehicle_d
 #def get_redundant_allocation_cost():
 
 # Precompute all vehicles' random positions and the distance from every sample to every passenger.
-def get_vehicle_sample_route_lengths(vehicle_pos_noisy, nearest_neighbor_searcher, epsilon, noise_model):
+# Route lenghts: matrix of route lengths from nodes to nodes
+# Returns a list of matrices
+def get_vehicle_sample_route_lengths(route_lengths, vehicle_pos_noisy, nearest_neighbor_searcher, epsilon, noise_model):
     num_samples = 100
     vehicle_sample_distances = []
     for p in vehicle_pos_noisy:
         point_locations = np.ones((num_samples, 2)) * p
         vehicle_node_ind_noisy, _ = noise.add_noise(point_locations, nearest_neighbor_searcher, epsilon, noise_model)
+        # Second argument is row vector; V is matrix that repeats vehicle indeces to match num passengers
         V = np.broadcast_arrays(np.ones((passenger_node_ind.shape[0], 1)), vehicle_node_ind_noisy)[1]
+        # P is matrix of passenger nodes; shape is transpose of V
         P = np.broadcast_arrays(np.ones((vehicle_node_ind_noisy.shape[0], 1)), passenger_node_ind)[1]
-        vehicle_sample_distances.append(route_lengths[V, P.T])
+        # Route lengths is matrix; route lengths of every sample to every passenger
+        vehicle_sample_distances.append(route_lengths[V, P.T]) # row index: passenger; col index: sample
+    # Transform list of matrices to 3d array: vehicle index, passenger index, sample index
     vehicle_sample_distances = np.array(vehicle_sample_distances)
+
+    #print 'Shape of vehicle_sample_distances: ' vehicle_sample_distances.shape()
 
     return vehicle_sample_distances
 
-
+# Returns list of available vehicles indeces; 
+# Returns list of lists; for each passegner, a list of assigned vehicles 
 def get_assigned_vehicles(num_vehicles, row_ind, col_ind):
     assigned_vehicles = []
     for _ in col_ind:
@@ -83,38 +92,61 @@ def get_assigned_vehicles(num_vehicles, row_ind, col_ind):
         assigned_vehicles[p].append(v)
     available_vehicles = list(set(range(num_vehicles) - set(row_ind)))
 
-    return available_vehicles, assigned_vehicles
+    return available_vehicle_ind, assigned_vehicle_ind
 
 
 # Assign a redundant number of vehicles to each passenger; after first round is allocated, assign vehicles that optimize gain (history-dependent objective)
-def get_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph):
+def get_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, vehicle_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph):
 
     # Assign first round optimally, with Hungarian method
     allocation_cost = probabilistic.get_allocation_cost_noisy(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
     cost, row_ind, col_ind = get_routing_assignment(allocation_cost)
     
-    # 
-    vehicle_sample_route_lengths = get_vehicle_sample_route_lengths(vehicle_pos_noisy, nearest_neighbor_searcher, epsilon, noise_model)
+    # Precompute route lenghts from all passengers to samples of vehicle positions
+    vehicle_sample_route_lengths = get_vehicle_sample_route_lengths(route_lengths, vehicle_pos_noisy, nearest_neighbor_searcher, epsilon, noise_model)
+    num_samples = vehicle_joint_sample_route_lengths.shape[2]
 
-    redundant_vehicles = 2
+    print 'num_samples = ', num_samples
+
+    redundant_vehicles = len(passenger_node_ind) - len(vehicle_node_ind)
+    print 'Redundant vehicles: ', redundant_vehicles
+    
     # Assign remaining vehicles greedily; up to max number
-    for rv in range(redundant_vehicles):
+    prev_row_ind = row_ind
+    prev_col_ind = col_ind
+    for _ in range(redundant_vehicles):
         # Compute updated cost (given additional vehicle)
-        available_vehicles, assigned_vehicles = get_assigned_vehicles(len(vehicle_pos_noisy, row_ind, col_ind))
+        available_vehicles, assigned_vehicles = get_assigned_vehicles(len(vehicle_pos_noisy, prev_row_ind, _prev_col_ind))
+        updated_allocation_cost = np.zeros((len(vehicle_node_ind),len(passenger_node_ind)))
+        
         for p in passenger_node_ind:
             # Get indeces of currently assigned vehicles
-            v_list = assigned_vehicles[p]
-            # Get list of lists of sample route-lengths
-            #vehicle_sample_route_lengths[]
-
-
+            v_assigned2_p = assigned_vehicles[p]
+            # Add each vehicle to set of already assigned, compute gain
+            for v in vehicle_node_ind:
+                # Vehicle is already assigned
+                if (v == v_assigned2_p).any():
+                    updated_allocation_cost[v, p] = allocation_cost[v, p]
+                # Add vehicle and compute updated cost
+                else:
+                    v_indeces = v_assigned2_p.append(v)
+                    # Get array of sample route-lengths for each assigned vehicle
+                    vehicle_joint_samples = np.zeros((len(v_indeces), num_samples))
+                    for k in range(len(v_indeces)):
+                        vehicle_joint_samples[k,:] = vehicle_sample_route_lengths[v_indeces[k],p,:]
+                    updated_allocation_cost[v, p] = np.mean(np.amin(vehicle_joint_samples,0))
 
         # Compute gain (previous minus current): reduction in waiting time
 
         # Choose best and assign
+        min_rows = np.argmin(updated_allocation_cost, 0))
+        tmp = updated_allocation_cost(min_rows, range(len(passenger_node_ind)))
+        p_min_ind = np.argmin(tmp)
+        v_min_ind = min_rows[p_min_ind]
 
         # Update remaining vehicles
-
+        row_ind = row_ind.append(v_min_ind)
+        col_ind = col_ind.append(p_min_ind)
 
     return cost, row_ind, col_ind
 
