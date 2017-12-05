@@ -43,7 +43,7 @@ def compute_nearest_nodes(vehicle_pos_noisy, epsilon, noise_model, nearest_neigh
     num_samples = 200
     point_locations = np.ones((num_samples,2)) * vehicle_pos_noisy
 
-    # Find nearest nodes around noisy point, given Laplace(epsilon)
+    # Find nearest nodes around noisy point, given noise model and scale parameter
     vehicle_node_ind_noisy, vehicle_node_pos_noisy = util_noise.add_noise(point_locations, nearest_neighbor_searcher, epsilon, noise_model)
 
     # Count occurences of graph nodes

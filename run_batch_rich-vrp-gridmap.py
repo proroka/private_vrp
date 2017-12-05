@@ -13,6 +13,8 @@ import utilities.plot as util_plot
 import manhattan.data as manh_data
 
 
+
+
 #-------------------------------------
 # Global settings
 
@@ -49,6 +51,10 @@ repeats = [] # Start at 1 (0 is always tested).
 graph = util_graph.create_grid_map(grid_size=20, edge_length=100., default_speed=10.)
 nearest_neighbor_searcher = util_graph.NearestNeighborSearcher(graph)
 route_lengths = util_graph.grid_map_route_lengths(graph)  #manh_data.LoadShortestPathData(graph, must_recompute=must_recompute)
+
+print 'Route lengths: ', type(route_lengths), len(route_lengths)
+#print 'Element of route route length: ', route_lengths.item()[0]
+
 
 graph, route_lengths, nearest_neighbor_searcher = util_graph.normalize(graph, route_lengths)
 
@@ -96,8 +102,8 @@ for it in range(num_iter):
 
         # Compute element-greedy allocation
         print 'Computing element-greedy allocation, using expected cost (epsilon = %g)...' % epsilon
-        cost, row_ind, col_ind = util_vrp.get_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
-        waiting_time[EG+'_%g_0' % epsilon].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+        #cost, row_ind, col_ind = util_vrp.get_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
+        #waiting_time[EG+'_%g_0' % epsilon].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
         
         # Compute set-greedy allocation
         print 'Computing set-greedy allocation, using expected cost (epsilon = %g)...' % epsilon
