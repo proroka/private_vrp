@@ -251,6 +251,14 @@ def get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_
 
 def get_optimal_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph):
 
+    # Compute all partitions of N vehicles in to M sets of size D (D = N/M)
+
+
+    # For each partition, compute optimal assignment
+
+    # Store allocation cost, update min
+
+    # Return partition and assignment indeces of assignment that resulted in minimum cost
 
     return cost, row_ind, col_ind
 
