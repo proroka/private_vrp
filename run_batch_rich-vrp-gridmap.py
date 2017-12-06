@@ -19,16 +19,16 @@ import manhattan.data as manh_data
 # Global settings
 
 # Total number of cars and passengers
-num_vehicles = 90
+num_vehicles = 60
 num_passengers = 30
 
-grid_size = 20
+grid_size = 15
 edge_length = 10.
 speed = 10.
 
 # Set-greedy settings
 #repeats = [1] # Start at 1 (0 is always tested).
-repeats = [num_vehicles / num_passengers]
+repeats = range(1, num_vehicles / num_passengers)
 
 # Uncertainty on locations
 noise_model = 'gauss' # {'gauss', 'laplace'}

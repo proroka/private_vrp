@@ -139,23 +139,22 @@ def get_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, 
         for p in range(len(passenger_node_ind)):
             # Get indeces of currently assigned vehicles
             v_assigned2_p = assigned_vehicles[p]
+            prev_cost_p = np.mean(np.amin(vehicle_sample_route_lengths[np.array(v_assigned2_p), p, :], 0))
 
             for v in available_vehicles:
                 v_indeces = v_assigned2_p[:]
                 v_indeces.append(v)
                 v_indeces = np.array(v_indeces)
                 # Mean of minimum over all assigned vehicles 
-                updated_allocation_cost[v, p] = np.mean(np.amin(vehicle_sample_route_lengths[v_indeces, p, :], 0))
+                updated_allocation_cost[v, p] = np.mean(np.amin(vehicle_sample_route_lengths[v_indeces, p, :], 0)) - prev_cost_p
 
         if verbose: print 'Only for available vehicles ', available_vehicles
         if verbose: print 'Updated cost should be BIG except from available veh.: \n', updated_allocation_cost
         # Compute gain (previous minus current): reduction in waiting time when assigning additional v to p
-        cost_reduction = updated_allocation_cost - allocation_cost
-        if verbose: print 'Cost reduction: \n', cost_reduction
-
+        
         # Find indeces of minimum value
         #v_min_ind, p_min_ind = np.unravel_index(np.argmin(updated_allocation_cost), updated_allocation_cost.shape)
-        v_min_ind, p_min_ind = np.unravel_index(np.argmin(cost_reduction), cost_reduction.shape)
+        v_min_ind, p_min_ind = np.unravel_index(np.argmin(updated_allocation_cost), updated_allocation_cost.shape)
 
         if verbose: print 'Will assign vehicle: %d  to passenger: %d' % (v_min_ind, p_min_ind)
         if verbose: print '... of available vehicles: ', available_vehicles

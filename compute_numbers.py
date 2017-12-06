@@ -6,7 +6,7 @@ import time
 import math
 
 numv = 10
-nump = 5
+nump = 2
 red = numv/ nump
 
 num_equal_partitions = math.factorial(numv) / (red)**nump
