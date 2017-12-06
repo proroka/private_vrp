@@ -111,7 +111,9 @@ def get_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, 
 
     redundant_vehicles = len(passenger_node_ind) - len(vehicle_node_ind)
     print 'Redundant vehicles: ', redundant_vehicles
-    
+    assert redundant_vehicles >= 0 ('There are no redundant vehicles. Number of vehicles must be larger than number
+        of passengers.')
+
     # Assign remaining vehicles greedily; up to max number
     available_vehicles, assigned_vehicles = get_assigned_vehicles(len(vehicle_pos_noisy), len(passenger_node_ind), row_ind, col_ind)
 
