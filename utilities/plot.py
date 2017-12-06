@@ -30,6 +30,7 @@ def plot_waiting_time_distr(waiting_time, percentile, bins, fig=None, filename=N
     plt.ylim([0, hdata_max])
     plt.xlabel('Time [s]')
     plt.ylabel('Frequency')
+    plt.title(filename)
     if filename:
         plt.savefig(filename, format='eps', transparent=True, frameon=False)
 

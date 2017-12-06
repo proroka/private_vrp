@@ -11,11 +11,17 @@ BIG_NUMBER = 1e7
 
 
 # Allocation cost given precomputed route lengths and noisy vehicle positions
+# In: route_lengths is ndarray (normalized)
 def get_allocation_cost_noisy(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph):
+    assert isinstance(route_lengths, np.ndarray) and len(route_lengths.shape) == 2, (
+        'This function requires a contiguous route length matrix. Use the graph_util.normalize() function.')
+
     num_vehicles = vehicle_pos_noisy.shape[0]
     num_passengers = len(passenger_node_ind)
     allocation_cost = np.zeros((num_vehicles, num_passengers))
     
+    #allocation_cost = np.ones((num_vehicles, num_passengers)) 
+
     for i in range(num_vehicles): 
         # Compute nearest nodes and corresponding probabilities for noisy position
         vehicle_node_ind, node_prob = compute_nearest_nodes(vehicle_pos_noisy[i,:], epsilon, noise_model, nearest_neighbor_searcher, graph)
@@ -26,14 +32,8 @@ def get_allocation_cost_noisy(route_lengths, vehicle_pos_noisy, passenger_node_i
             # for all nodes in feasible set
             for k in range(len(vehicle_node_ind)):
                 start = vehicle_node_ind[k]
-                prob = node_prob[k]
-                # Compute cost of shortest path for all possible allocations
-                if start not in route_lengths or end not in route_lengths[start]:
-                    cost = BIG_NUMBER
-                else:
-                    cost = route_lengths[start][end] * prob
-
-                allocation_cost[i,j] += cost
+                allocation_cost[i, j] += route_lengths[start, end] * node_prob[k]
+                    
 
 
     return allocation_cost

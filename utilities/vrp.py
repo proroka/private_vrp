@@ -63,7 +63,7 @@ def get_updated_allocation_cost(vehicle_available, passenger_vehicles, vehicle_d
 # Precompute all vehicles' random positions and the distance from every sample to every passenger.
 # Route lenghts: matrix of route lengths from nodes to nodes
 # Returns a list of matrices
-def get_vehicle_sample_route_lengths(route_lengths, vehicle_pos_noisy, nearest_neighbor_searcher, epsilon, noise_model):
+def get_vehicle_sample_route_lengths(route_lengths, vehicle_pos_noisy, passenger_node_ind, vehicle_node_ind, nearest_neighbor_searcher, epsilon, noise_model):
     num_samples = 100
     vehicle_sample_distances = []
     for p in vehicle_pos_noisy:
@@ -83,7 +83,7 @@ def get_vehicle_sample_route_lengths(route_lengths, vehicle_pos_noisy, nearest_n
     return vehicle_sample_distances
 
 # Returns list of available vehicles indeces; 
-# Returns list of lists; for each passegner, a list of assigned vehicles 
+# Returns list of lists; for each passegner, a list of assigned vehicle indeces
 def get_assigned_vehicles(num_vehicles, num_passengers, row_ind, col_ind):
     assigned_vehicles = []
     for _ in range(num_passengers):
@@ -91,38 +91,53 @@ def get_assigned_vehicles(num_vehicles, num_passengers, row_ind, col_ind):
     # Add vehicle node index to list
     for v, p in zip(row_ind, col_ind):
         assigned_vehicles[p].append(v)
-    available_vehicles = list(set(range(num_vehicles) - set(row_ind)))
+    available_vehicles = list(set(range(num_vehicles)) - set(row_ind))
 
-    return available_vehicle_ind, assigned_vehicle_ind
+    return available_vehicles, assigned_vehicles
 
 
-# Assign a redundant number of vehicles to each passenger; after first round is allocated, assign vehicles that optimize gain (history-dependent objective)
+# Get assignment of M vehicles to M passengers (redundant vehicles remain unused)
+def get_Hungarian_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph):
+     # Assign first round optimally, with Hungarian method
+    allocation_cost = probabilistic.get_allocation_cost_noisy(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
+    cost, row_ind, col_ind = get_routing_assignment(allocation_cost)
+
+    return cost, row_ind, col_ind
+    
+
+# Assign a redundant number of vehicles to each passenger; after first round is allocated, assign vehicles provide largest gain
+# Gain: as measured by largest decrease in cost (history-dependent objective)
 def get_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, vehicle_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph):
+    verbose = False
+
 
     # Assign first round optimally, with Hungarian method
     allocation_cost = probabilistic.get_allocation_cost_noisy(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
     cost, row_ind, col_ind = get_routing_assignment(allocation_cost)
-    
+    #print 'Number of assigned vehicles at start: ', len(row_ind)
+
+    if verbose: print 'Allocation cost: \n', allocation_cost
+
     # Precompute route lengths from all passengers to samples of vehicle positions
-    vehicle_sample_route_lengths = get_vehicle_sample_route_lengths(route_lengths, vehicle_pos_noisy, nearest_neighbor_searcher, epsilon, noise_model)
-    num_samples = vehicle_joint_sample_route_lengths.shape[2]
+    vehicle_sample_route_lengths = get_vehicle_sample_route_lengths(route_lengths, vehicle_pos_noisy, passenger_node_ind, vehicle_node_ind, nearest_neighbor_searcher, epsilon, noise_model)
+    num_samples = vehicle_sample_route_lengths.shape[2]
 
-    print 'num_samples = ', num_samples
-
-    redundant_vehicles = len(passenger_node_ind) - len(vehicle_node_ind)
-    print 'Redundant vehicles: ', redundant_vehicles
-    assert redundant_vehicles >= 0 ('There are no redundant vehicles. Number of vehicles must be larger than number
-        of passengers.')
+    redundant_vehicles = len(vehicle_node_ind) - len(passenger_node_ind)
+    if verbose: print 'Redundant vehicles: ', redundant_vehicles
+    #assert redundant_vehicles >= 0, ('No redundant vehicles: the number of vehicles must be larger than number of passengers.')
 
     # Assign remaining vehicles greedily; up to max number
     available_vehicles, assigned_vehicles = get_assigned_vehicles(len(vehicle_pos_noisy), len(passenger_node_ind), row_ind, col_ind)
 
+    if verbose: print 'Currently assigned vehicles: ', assigned_vehicles
+
+    # Compute updated allocation cost (as a function fo already assigned vechiles)
+    updated_allocation_cost =  allocation_cost.copy() 
     for _ in range(redundant_vehicles):
-        # Compute updated cost (given additional vehicle)
-        #available_vehicles, assigned_vehicles = get_assigned_vehicles(len(vehicle_pos_noisy, prev_row_ind, prev_col_ind))
         
         updated_allocation_cost = np.ones((len(vehicle_node_ind),len(passenger_node_ind))) * BIG_NUMBER
-        
+        if verbose: print 'updated cost should be BIG: \n', updated_allocation_cost
+
         for p in range(len(passenger_node_ind)):
             # Get indeces of currently assigned vehicles
             v_assigned2_p = assigned_vehicles[p]
@@ -131,38 +146,49 @@ def get_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, 
                 v_indeces = v_assigned2_p[:]
                 v_indeces.append(v)
                 v_indeces = np.array(v_indeces)
+                # Mean of minimum over all assigned vehicles 
                 updated_allocation_cost[v, p] = np.mean(np.amin(vehicle_sample_route_lengths[v_indeces, p, :], 0))
 
-            #####
-            # Add each vehicle to set of already assigned, compute gain
-            # for v in vehicle_node_ind:
-            #     # Vehicle is already assigned
-            #     if (v == v_assigned2_p).any():
-            #         updated_allocation_cost[v, p] = allocation_cost[v, p]
-            #     # Add vehicle and compute updated cost
-            #     else:
-            #         v_indeces = v_assigned2_p.append(v)
-            #         # Get array of sample route-lengths for each assigned vehicle
-            #         vehicle_joint_samples = np.zeros((len(v_indeces), num_samples))
-            #         for k in range(len(v_indeces)):
-            #             vehicle_joint_samples[k,:] = vehicle_sample_route_lengths[v_indeces[k],p,:]
-            #         updated_allocation_cost[v, p] = np.mean(np.amin(vehicle_joint_samples,0))
-
-        # Compute gain (previous minus current): reduction in waiting time
+        if verbose: print 'Only for available vehicles ', available_vehicles
+        if verbose: print 'Updated cost should be BIG except from available veh.: \n', updated_allocation_cost
+        # Compute gain (previous minus current): reduction in waiting time when assigning additional v to p
+        cost_reduction = updated_allocation_cost - allocation_cost
+        if verbose: print 'Cost reduction: \n', cost_reduction
 
         # Find indeces of minimum value
-        v_min_ind, p_min_ind = np.unravel_index(np.argmin(updated_allocation_cost), updated_allocation_cost.shape)
+        #v_min_ind, p_min_ind = np.unravel_index(np.argmin(updated_allocation_cost), updated_allocation_cost.shape)
+        v_min_ind, p_min_ind = np.unravel_index(np.argmin(cost_reduction), cost_reduction.shape)
+
+        if verbose: print 'Will assign vehicle: %d  to passenger: %d' % (v_min_ind, p_min_ind)
+        if verbose: print '... of available vehicles: ', available_vehicles
 
         # Update remaining vehicles
-        row_ind.append(v_min_ind)
-        col_ind.append(p_min_ind)
+        row_ind = np.append(row_ind, v_min_ind)
+        col_ind = np.append(col_ind, p_min_ind)
+
+        if verbose: print 'Trying to remove %d from %s' %(v_min_ind, available_vehicles)
         available_vehicles.remove(v_min_ind)
         assigned_vehicles[p_min_ind].append(v_min_ind)
 
+        #print 'Number of assigned vehicles at end of greedy: ', len(row_ind)
+        #print len(col_ind)
+
+    return updated_allocation_cost, row_ind, col_ind
+
+
+def get_set_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeats):
+
+    cost, row_ind, col_ind, vd = get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeat=0)
+    
+    previous_repeat = 0
+    for repeat in repeats:
+        cost, row_ind, col_ind, _ = get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeat=repeat,
+                                                                             previous_row_ind=row_ind, previous_col_ind=col_ind, previous_repeat=previous_repeat, previous_vehicle_distances=vd)
+        previous_repeat = repeat
+
+
     return cost, row_ind, col_ind
-
-
-
+    
 
 def get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeat=1,
                                     previous_row_ind=None, previous_col_ind=None, previous_repeat=None, previous_vehicle_distances=None):
@@ -224,10 +250,14 @@ def get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_
             col_ind.append(p)
     return cost, row_ind, col_ind, vehicle_sample_distances
 
+# In: route_lengths: ndarray
 def compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind):
     waiting_times = collections.defaultdict(lambda: np.inf)
+
     for v, p in zip(row_ind, col_ind):
-        waiting_times[p] = min(waiting_times[p], route_lengths[vehicle_node_ind[v]][passenger_node_ind[p]])
+        #waiting_times[p] = min(waiting_times[p], route_lengths[vehicle_node_ind[v]][passenger_node_ind[p]])
+        waiting_times[p] = min(waiting_times[p], route_lengths[vehicle_node_ind[v], passenger_node_ind[p]])
+
     w = []
     for p in range(len(passenger_node_ind)):
         w.append(float(waiting_times[p]))
