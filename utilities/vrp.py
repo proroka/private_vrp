@@ -58,8 +58,6 @@ def get_updated_allocation_cost(vehicle_available, passenger_vehicles, vehicle_d
     allocation_cost = np.mean(np.min(distances, axis=-2), axis=-1)
     return allocation_cost
 
-#def get_redundant_allocation_cost():
-
 # Precompute all vehicles' random positions and the distance from every sample to every passenger.
 # Route lenghts: matrix of route lengths from nodes to nodes
 # Returns a list of matrices
@@ -249,6 +247,14 @@ def get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_
             row_ind.append(v)
             col_ind.append(p)
     return cost, row_ind, col_ind, vehicle_sample_distances
+
+
+def get_optimal_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph):
+
+
+    return cost, row_ind, col_ind
+
+
 
 # In: route_lengths: ndarray
 def compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind):

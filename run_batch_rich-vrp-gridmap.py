@@ -19,8 +19,12 @@ import manhattan.data as manh_data
 # Global settings
 
 # Total number of cars and passengers
-num_vehicles = 80
-num_passengers = 20
+num_vehicles = 90
+num_passengers = 30
+
+grid_size = 20
+edge_length = 10.
+speed = 10.
 
 # Set-greedy settings
 #repeats = [1] # Start at 1 (0 is always tested).
@@ -30,7 +34,7 @@ repeats = [num_vehicles / num_passengers]
 noise_model = 'gauss' # {'gauss', 'laplace'}
 # Set noise parameter: scale 
 if noise_model == 'laplace': epsilons = [0.02] 
-elif noise_model == 'gauss': epsilons =  [200.0]  
+elif noise_model == 'gauss': epsilons =  [10.0]  
 
 plot_on = True
 set_seed = False
@@ -51,7 +55,7 @@ fig_fn_base = 'figures/rich-vrp_batch_s0'
 # Load structures
 
 # Load graph
-graph = util_graph.create_grid_map(grid_size=20, edge_length=50., default_speed=10.)
+graph = util_graph.create_grid_map(grid_size=grid_size, edge_length=edge_length, default_speed=speed)
 nearest_neighbor_searcher = util_graph.NearestNeighborSearcher(graph)
 route_lengths = util_graph.grid_map_route_lengths(graph)  #manh_data.LoadShortestPathData(graph, must_recompute=must_recompute)
 
@@ -99,7 +103,7 @@ for it in range(num_iter):
         _, passenger_pos_noisy = util_noise.add_noise(passenger_node_pos, nearest_neighbor_searcher, epsilon, noise_model)
 
         # Compute optimal allocation
-        #cost, row_ind, col_ind, vd = util_vrp.get_repeated_routing_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeat=0)
+        #cost, row_ind, col_ind = util_vrp.get_optimal_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
         #waiting_time[OPT+'_%g_0' % epsilon].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
 
         # Compute element-greedy allocation
