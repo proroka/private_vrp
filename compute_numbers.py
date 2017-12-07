@@ -20,7 +20,6 @@ num_total_partitions = math.factorial(numv) * math.factorial(numv-1) / (math.fac
 
 print 'Total number of partitions: ', num_total_partitions
 
-# Exmaple
-vset = [1, 2, 3]
+num_matchings = nump**numv
 
-print '%s', list(itertools.permutations(vset))
+print 'Total number of matchings: ', num_matchings

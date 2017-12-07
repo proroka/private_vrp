@@ -19,8 +19,8 @@ import manhattan.data as manh_data
 # Global settings
 
 # Total number of cars and passengers
-num_vehicles = 12
-num_passengers = 6
+num_vehicles = 15
+num_passengers = 5
 
 grid_size = 10
 edge_length = 100.
@@ -43,11 +43,11 @@ if set_seed:
     np.random.seed(1019)
 
 # Iterations over vehicle/passenger distributions
-num_iter = 3
+num_iter = 30
 
 # Save simulation data and figures
-filename = 'data/rich-vrp_batch_s0.dat'
-fig_fn_base = 'figures/rich-vrp_batch_s0'
+filename = 'data/rich-vrp_batch_s1.dat'
+fig_fn_base = 'figures/rich-vrp_batch_s1'
 
 
 
@@ -123,6 +123,7 @@ for it in range(num_iter):
         _, passenger_pos_noisy = util_noise.add_noise(passenger_node_pos, nearest_neighbor_searcher, epsilon, noise_model)
 
         # Compute optimal allocation
+        print 'Computing optimal allocation, using expected cost (epsilon = %g)...' % epsilon
         cost, row_ind, col_ind = util_vrp.get_optimal_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
         waiting_time[OPT+'_%g_0' % epsilon].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
 

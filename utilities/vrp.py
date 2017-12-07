@@ -119,9 +119,7 @@ def get_optimal_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind,
     # Compute first assignment (Hungarian): at least
     allocation_cost = np.mean(vehicle_sample_route_lengths, 2)
     cost, row_ind, col_ind = get_routing_assignment(allocation_cost)
-    #print row_ind
-    #print col_ind
-    #print 'where:', np.array(np.where(col_ind==1))[0]
+
     num_vehicles_left = num_vehicles-len(row_ind)
     available_vehicles = list(set(range(num_vehicles)) - set(row_ind))
     # print 'Available vehciles: ', available_vehicles
@@ -130,7 +128,10 @@ def get_optimal_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind,
     matchings = list(itertools.product(range(num_passengers), repeat=(num_vehicles_left)))
     min_matching_allocation_cost = BIG_NUMBER
     
+
     for i in range(len(matchings)):
+        if (i%5000==0): 
+            print 'Matching %d out of %d\n' % (i, len(matchings))
         matching_allocation_cost = 0.
         matching = np.array(matchings[i])
         
