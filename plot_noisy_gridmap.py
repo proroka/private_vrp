@@ -13,8 +13,8 @@ import manhattan.data as manh_data
 noise_model = 'gauss'
 
 # Load graph
-grid_size = 6
-edge_length = 20.
+grid_size = 10
+edge_length = 100.
 speed = 10.
 
 graph = util_graph.create_grid_map(grid_size=grid_size, edge_length=edge_length, default_speed=speed)
@@ -28,15 +28,11 @@ poi_xy = np.array([randx, randy])
 
 
 if noise_model == 'laplace': epsilons = [] #[0.005, 0.01, 0.02, 0.05, 0.1]
-elif noise_model == 'gauss': epsilons = [10.0] #[10.0, 30.0, 60.0]
+elif noise_model == 'gauss': epsilons = [100.0] #[10.0, 30.0, 60.0]
 
 print epsilons
 num_samples = 100
 point_locations = np.ones((num_samples, 2)) * poi_xy
-
-
-print graph.nodes()
-print np.array(graph.nodes())* edge_length
 
 
 # Create auxiliary graph to generate node positions

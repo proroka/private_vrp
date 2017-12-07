@@ -22,18 +22,20 @@ def normalize(graph, route_lengths):
 
 
 # Create directional grid map
-def create_grid_map(grid_size=10, edge_length=100., default_speed=10.):
+def create_grid_map(grid_size=10, edge_length=100., default_speed=10., std_dev=2.0):
     nx_graph = nx.grid_2d_graph(grid_size, grid_size)
     graph = nx.MultiDiGraph()
     node_to_index = {}
     for i, (x, y) in enumerate(nx_graph.nodes()):
-      graph.add_node(i, x=float(x) * edge_length, y=float(y) * edge_length)
-      node_to_index[(x, y)] = i
+        graph.add_node(i, x=float(x) * edge_length, y=float(y) * edge_length)
+        node_to_index[(x, y)] = i
     for u, v in nx_graph.edges():
-      graph.add_edge(node_to_index[u], node_to_index[v], length=edge_length,
-                     oneway=False, speed=default_speed, time=edge_length / default_speed)
-      graph.add_edge(node_to_index[v], node_to_index[u], length=edge_length,
-                     oneway=False, speed=default_speed, time=edge_length / default_speed)
+        # randomize default speed
+        ds = max(1.0, default_speed + np.random.randn()*std_dev)
+        graph.add_edge(node_to_index[u], node_to_index[v], length=edge_length,
+                     oneway=False, speed=default_speed, time=edge_length / ds)
+        graph.add_edge(node_to_index[v], node_to_index[u], length=edge_length,
+                     oneway=False, speed=default_speed, time=edge_length / ds)
     return graph
 
 def grid_map_route_lengths(graph):
