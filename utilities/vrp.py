@@ -107,8 +107,6 @@ def get_Hungarian_assignment(route_lengths, vehicle_pos_noisy, passenger_node_in
 # TODO: should return an allocation cost matrix instead of a sum of costs
 def get_optimal_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph):
 
-    col_ind = []
-    row_ind = []
     num_passengers = len(passenger_node_ind)
     num_vehicles = len(vehicle_pos_noisy)
 
@@ -125,20 +123,19 @@ def get_optimal_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind,
     # print 'Available vehciles: ', available_vehicles
     #print num_vehicles_left
 
-    matchings = list(itertools.product(range(num_passengers), repeat=(num_vehicles_left)))
+    matchings = list(itertools.product(range(num_passengers), repeat=num_vehicles_left))
     min_matching_allocation_cost = BIG_NUMBER
     
-
     for i in range(len(matchings)):
         if (i%5000==0): 
             print 'Matching %d out of %d\n' % (i, len(matchings))
         matching_allocation_cost = 0.
         matching = np.array(matchings[i])
-        
 
         for p in range(num_passengers):
             v_assigned2_p = []
-            assigned = (np.ones((1, num_vehicles_left)) * p == np.array(matching))[0]
+            assigned = (p == matching)
+            print assigned
             #print 'Assigned: ', assigned
             for k in range(len(assigned)):
                 #print 'Assigned[k]: ', assigned[k]
