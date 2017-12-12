@@ -13,14 +13,16 @@ import utilities.plot as util_plot
 import manhattan.data as manh_data
 
 
+BOUND_INF = 0
+BOUND_HUNGARIAN = 1
 
 
 #-------------------------------------
 # Global settings
 
 # Total number of cars and passengers
-num_vehicles = 15
-num_passengers = 5
+num_vehicles_list = [4, 8, 12, 16]
+num_passengers = 4
 
 grid_size = 10
 edge_length = 100.
@@ -29,7 +31,6 @@ std = 2.0 # sigma on speeds
 
 # Set-greedy settings
 #repeats = [1] # Start at 1 (0 is always tested).
-repeats = range(1, num_vehicles / num_passengers)
 
 # Uncertainty on locations
 noise_model = 'gauss' # {'gauss', 'laplace'}
@@ -43,11 +44,11 @@ if set_seed:
     np.random.seed(1019)
 
 # Iterations over vehicle/passenger distributions
-num_iter = 30
+num_iter = 2
 
 # Save simulation data and figures
-filename = 'data/rich-vrp_batch_s1.dat'
-fig_fn_base = 'figures/rich-vrp_batch_s1'
+filename = 'data/rich-vrp_batch_s2.dat'
+fig_fn_base = 'figures/rich-vrp_batch_s2'
 
 
 
@@ -74,7 +75,7 @@ if plot_distr:
 
 num_nodes = len(graph.nodes())
 print 'Num nodes:', num_nodes
-print 'Num vehicles:', num_vehicles
+print 'Num vehicles:', num_vehicles_list
 print 'Num passengers:', num_passengers
 
 
@@ -85,73 +86,87 @@ SG = 'set-greedy'
 EG = 'element-greedy'
 HUN = 'hungarian'
 RAND = 'random'
-waiting_time = collections.defaultdict(lambda: [])
-
+#waiting_time = collections.defaultdict(lambda: [])
+waiting_time = collections.defaultdict(lambda: collections.defaultdict(list))
 
 #-------------------------------------
 # Run algorithms
 
 
-for it in range(num_iter):
+for num_vehicles in num_vehicles_list:
+    # Settings for set-greedy
+    repeats = range(1, num_vehicles / num_passengers)
 
-    s = time.time()
-    print '********  Iteration %d  ********' % it
-    # Compute vehicle and passenger pickup and dropoff locations
-    vehicle_node_ind = np.random.choice(graph.nodes(), size=num_vehicles, replace=True)
-    passenger_node_ind = np.random.choice(graph.nodes(), size=num_passengers, replace=True)
+    for it in range(num_iter):
 
-    if plot_distr:
-        rl_flat = route_lengths[vehicle_node_ind][passenger_node_ind].flatten()
-        print len(rl_flat)
-        rl_bins = 50
-        hdata, hbins = np.histogram(rl_flat, bins=rl_bins)
-        plt.figure()
-        plt.bar(hbins[:-1], hdata, hbins[1]-hbins[0], bottom=None, hold=None, data=None)
+        s = time.time()
+        print '********  Iteration %d  ********' % it
+        # Compute vehicle and passenger pickup and dropoff locations
+        vehicle_node_ind = np.random.choice(graph.nodes(), size=num_vehicles, replace=True)
+        passenger_node_ind = np.random.choice(graph.nodes(), size=num_passengers, replace=True)
 
-    # Non-noisy (true) allocation
-    true_allocation_cost = util_vrp.get_allocation_cost(route_lengths, vehicle_node_ind, passenger_node_ind)
-    allocation_cost = true_allocation_cost
-    cost, row_ind, col_ind = util_vrp.get_routing_assignment(allocation_cost)
-    waiting_time[TRUE].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+        if plot_distr:
+            rl_flat = route_lengths[vehicle_node_ind][passenger_node_ind].flatten()
+            print len(rl_flat)
+            rl_bins = 50
+            hdata, hbins = np.histogram(rl_flat, bins=rl_bins)
+            plt.figure()
+            plt.bar(hbins[:-1], hdata, hbins[1]-hbins[0], bottom=None, hold=None, data=None)
 
-    for epsilon in epsilons:
-        # Generate noisy vehicle positions
-        vehicle_node_pos = util_graph.GetNodePositions(graph, vehicle_node_ind)
-        _, vehicle_pos_noisy = util_noise.add_noise(vehicle_node_pos, nearest_neighbor_searcher, epsilon, noise_model)        
-        # Generate noisy passenger positions
-        passenger_node_pos = util_graph.GetNodePositions(graph, passenger_node_ind)
-        _, passenger_pos_noisy = util_noise.add_noise(passenger_node_pos, nearest_neighbor_searcher, epsilon, noise_model)
+        # Non-noisy (true) allocation
+        true_allocation_cost = util_vrp.get_allocation_cost(route_lengths, vehicle_node_ind, passenger_node_ind)
+        allocation_cost = true_allocation_cost
+        cost, row_ind, col_ind = util_vrp.get_routing_assignment(allocation_cost)
+        waiting_time[TRUE][num_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
 
-        # Compute optimal allocation
-        print 'Computing optimal allocation, using expected cost (epsilon = %g)...' % epsilon
-        cost, row_ind, col_ind = util_vrp.get_optimal_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
-        waiting_time[OPT+'_%g_0' % epsilon].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+        for epsilon in epsilons:
+            # Generate noisy vehicle positions
+            vehicle_node_pos = util_graph.GetNodePositions(graph, vehicle_node_ind)
+            _, vehicle_pos_noisy = util_noise.add_noise(vehicle_node_pos, nearest_neighbor_searcher, epsilon, noise_model)        
+            # Generate noisy passenger positions
+            passenger_node_pos = util_graph.GetNodePositions(graph, passenger_node_ind)
+            _, passenger_pos_noisy = util_noise.add_noise(passenger_node_pos, nearest_neighbor_searcher, epsilon, noise_model)
 
-        # Compute element-greedy allocation
-        print 'Computing element-greedy allocation, using expected cost (epsilon = %g)...' % epsilon
-        cost, row_ind, col_ind = util_vrp.get_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
-        waiting_time[EG+'_%g_0' % epsilon].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
-        
-        # Compute set-greedy allocation
-        print 'Computing set-greedy allocation, using expected cost (epsilon = %g)...' % epsilon
-        cost, row_ind, col_ind = util_vrp.get_set_greedy_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeats)
-        waiting_time[SG+'_%g_0' % epsilon].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+            num_samples = 200
+            route_length_samples = util_vrp.get_vehicle_sample_route_lengths(route_lengths, num_samples, vehicle_pos_noisy, passenger_node_ind, nearest_neighbor_searcher, epsilon, noise_model)
+            
+            # Compute optimal allocation
+            topt = time.time()
+            print 'Computing optimal allocation, using expected cost (epsilon = %g)...' % epsilon
+            cost, row_ind, col_ind = util_vrp.get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_node_ind, nearest_neighbor_searcher, epsilon, noise_model,
+                                use_initial_hungarian=True, use_bound=True, refined_bound=True, bound_initialization=BOUND_HUNGARIAN)
+            #print 'Time for opt in BATCH: ', time.time() - topt
+            waiting_time[OPT+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+            #print cost
 
-        # Compute Hungarian allocation, redundant vehicles remain unused
-        print 'Computing Hungarian allocation, using expected cost (epsilon = %g)...' % epsilon
-        cost, row_ind, col_ind = util_vrp.get_Hungarian_assignment(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
-        waiting_time[HUN+'_%g_0' % epsilon].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+            # Compute element-greedy allocation
+            print 'Computing element-greedy allocation, using expected cost (epsilon = %g)...' % epsilon
+            cost, row_ind, col_ind = util_vrp.get_greedy_assignment(route_length_samples, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
+            waiting_time[EG+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+            #print cost
 
-    # Random
-    print 'Computing random VRP...'
-    cost, row_ind, col_ind = util_vrp.get_rand_routing_assignment(true_allocation_cost)
-    waiting_time[RAND].extend(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+            # Compute set-greedy allocation
+            print 'Computing set-greedy allocation, using expected cost (epsilon = %g)...' % epsilon
+            cost, row_ind, col_ind = util_vrp.get_set_greedy_assignment(route_length_samples, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeats)
+            waiting_time[SG+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+            #print cost
 
-    e = time.time()
-    print 'Time per iteration: ', e-s
+            # Compute Hungarian allocation, redundant vehicles remain unused
+            print 'Computing Hungarian allocation, using expected cost (epsilon = %g)...' % epsilon
+            cost, row_ind, col_ind = util_vrp.get_Hungarian_assignment(route_length_samples) #, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
+            waiting_time[HUN+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+            #print cost
 
-with open(filename, 'wb') as fp:
-    fp.write(msgpack.packb({'waiting_time': waiting_time, 'epsilons': epsilons, 'num_vehicles': num_vehicles, 'num_passengers': num_passengers, 'num_iter': num_iter}))
+        # Random
+        print 'Computing random VRP...'
+        cost, row_ind, col_ind = util_vrp.get_rand_routing_assignment(true_allocation_cost)
+        waiting_time[RAND][num_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+
+        e = time.time()
+        print 'Time per iteration: ', e-s
+
+    with open(filename, 'wb') as fp:
+        fp.write(msgpack.packb({'waiting_time': waiting_time, 'epsilons': epsilons, 'num_vehicles': num_vehicles, 'num_passengers': num_passengers, 'num_iter': num_iter}))
 
 
 
@@ -159,14 +174,15 @@ with open(filename, 'wb') as fp:
 # Plot results
 
 # Plot
-if plot_on:
+plot_hist = False
+if plot_hist:
     print 'Plotting...'
     set_x_lim = None #500
     set_y_lim = None #0.25
     max_value = max(np.max(w) for i, w in waiting_time.iteritems() if i != RAND)
     num_bins = 30
     for i, w in waiting_time.iteritems():
-        print 'Mean, %s: %g' % (i, np.mean(w))
+        print 'Mean, %s:\t %g ' % (i, np.mean(w))
         if i == RAND:
             continue
         fig = plt.figure(figsize=(6, 6), frameon=False)
@@ -179,3 +195,41 @@ if plot_on:
     raw_input('Hit ENTER to close figure')
 
     plt.close()
+
+plot_curve = True
+if plot_curve:
+    
+    col = ['b','r','g','m','c','y']
+    fig = plt.figure(figsize=(6, 6), frameon=False)
+
+
+    ind = 0
+    for algo, w_dict in waiting_time.iteritems():
+        if algo == RAND:
+            continue
+        m_values = np.zeros((len(num_vehicles_list),))
+        s_values = np.zeros((len(num_vehicles_list),))
+        
+        i_list = []
+        for num_vehicles, w in w_dict.iteritems():
+        
+            index = np.where(np.array(num_vehicles_list)==num_vehicles)
+            i_list.append(index)
+            m_values[index] = np.mean(w)
+            s_values[index] = np.std(w)
+            #print '%d : %f' % (num_vehicles, np.mean(w))
+
+        print 'Algorithm: %s, : %s' %(algo, m_values)
+        #print i_list
+        plt.plot(num_vehicles_list, m_values, color=col[ind], marker='o', label=algo)
+        ind += 1
+
+    plt. legend()
+    fig_filename = fig_fn_base + '_curve.eps'
+    plt.show(block=False)
+    raw_input('Hit ENTER to close figure')
+
+    plt.close()
+
+
+

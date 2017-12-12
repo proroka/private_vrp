@@ -17,7 +17,7 @@ grid_size = 10
 edge_length = 100.
 speed = 10.
 
-graph = util_graph.create_grid_map(grid_size=grid_size, edge_length=edge_length, default_speed=speed)
+graph = util_graph.create_grid_map(grid_size=grid_size, edge_length=edge_length, default_speed=speed, std_dev=2.0)
 nearest_neighbor_searcher = util_graph.NearestNeighborSearcher(graph)
 
 
@@ -28,7 +28,7 @@ poi_xy = np.array([randx, randy])
 
 
 if noise_model == 'laplace': epsilons = [] #[0.005, 0.01, 0.02, 0.05, 0.1]
-elif noise_model == 'gauss': epsilons = [100.0] #[10.0, 30.0, 60.0]
+elif noise_model == 'gauss': epsilons = [150.0] #[10.0, 30.0, 60.0]
 
 print epsilons
 num_samples = 100
