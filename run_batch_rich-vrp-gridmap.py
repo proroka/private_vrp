@@ -44,11 +44,11 @@ if set_seed:
     np.random.seed(1019)
 
 # Iterations over vehicle/passenger distributions
-num_iter = 2
+num_iter = 1000
 
 # Save simulation data and figures
-filename = 'data/rich-vrp_batch_s2.dat'
-fig_fn_base = 'figures/rich-vrp_batch_s2'
+filename = 'data/rich-vrp_batch_s3.dat'
+fig_fn_base = 'figures/rich-vrp_batch_s3'
 
 
 
