@@ -184,7 +184,7 @@ def get_greedy_assignment(vehicle_sample_route_lengths, vehicle_pos_noisy, passe
         #print 'Number of assigned vehicles at end of greedy: ', len(row_ind)
         #print len(col_ind)
 
-    return updated_allocation_cost, row_ind, col_ind
+    return compute_sampled_cost(vehicle_sample_route_lengths, row_ind, col_ind), row_ind, col_ind
 
 
 def get_set_greedy_assignment(vehicle_sample_distances, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeats):
@@ -295,6 +295,18 @@ def compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, r
     return w
 
 
+def compute_sampled_cost(route_length_samples, row_ind, col_ind):
+    num_vehicles, num_passengers, _ = route_length_samples.shape
+    assignments = []
+    for _ in range(num_passengers):
+        assignments.append([])
+    for v, p in zip(row_ind, col_ind):
+        assignments[p].append(v)
+    cost = 0.
+    for p in range(num_passengers):
+        vehicle_idx = np.array(assignments[p])
+        cost += np.mean(np.min(route_length_samples[vehicle_idx, p, :], axis=0))
+    return cost / float(num_passengers)
 
 def get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_node_ind, nearest_neighbor_searcher, epsilon, noise_model,
                             use_initial_hungarian=False, use_bound=True, refined_bound=True, bound_initialization=BOUND_HUNGARIAN):
@@ -312,7 +324,9 @@ def get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_no
     if bound_initialization == BOUND_HUNGARIAN:
         bound[0] = np.sum(c[row_ind, col_ind])
 
+    initial_solution = None
     if use_initial_hungarian:
+        _, initial_solution = get_assigned_vehicles(num_vehicles, num_passengers, row_ind, col_ind)
         for v, p in zip(row_ind, col_ind):
             preassigned[p] = v
             available_vehicles_binary &= ~(1 << v)
@@ -341,7 +355,7 @@ def get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_no
             return 0., []
 
         # We haven't assigned all passengers, but have no more vehicles available.
-        if available_vehicles_binary == 0:
+        if not use_initial_hungarian and available_vehicles_binary == 0:
             return float('inf'), None
 
         # Bound.
@@ -354,8 +368,8 @@ def get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_no
         num_available_vehicles = bitlib.count_ones(available_vehicles_binary)
         minimum_cost = float('inf')
         best_solution = None
-        # -1 because we need to assign at least one vehicle.
-        for passenger_assignment_binary in xrange(2 ** num_available_vehicles - 1):
+        # -1 because we need to assign at least one vehicle when not using initial hungarian.
+        for passenger_assignment_binary in xrange(2 ** num_available_vehicles - int(not use_initial_hungarian)):
             new_availability, assigned_vehicle_indices = bitlib.combine_bits(
                 available_vehicles_binary, passenger_assignment_binary, preassigned[passenger_index])
             c = np.mean(np.min(route_length_samples[assigned_vehicle_indices, passenger_index, :], axis=0))
@@ -365,21 +379,19 @@ def get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_no
                 best_solution = [assigned_vehicle_indices] + next_solution
                 minimum_cost = total_cost
         cached_results[(passenger_index, available_vehicles_binary)] = (minimum_cost, best_solution)
-
-
         return minimum_cost, best_solution
 
     cost, best_solution = min_cost(0, available_vehicles_binary, 0.)
-    print 'Bound: ', bound
+    best_solution = best_solution or initial_solution
+    # print 'Bound: ', bound
 
     # Transform solution to row_ind, col_ind
-    if best_solution:
-        row_ind = []
-        col_ind = []
-        for i in range(len(best_solution)):
-            nv = len(best_solution[i])
-            row_ind.extend(best_solution[i])
-            col_ind.extend([i] * nv)
+    row_ind = []
+    col_ind = []
+    for i in range(len(best_solution)):
+        nv = len(best_solution[i])
+        row_ind.extend(best_solution[i])
+        col_ind.extend([i] * nv)
 
     # else: return row_ind and col_ind from Hungarian assignment
 

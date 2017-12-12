@@ -1,7 +1,7 @@
 /*
 swig -python bitlib.i && \
 gcc -c bitlib.c bitlib_wrap.c \
-  -I/usr/local/Cellar/python/2.7.9/Frameworks/Python.framework/Versions/2.7/include/python2.7 \
+  -I/usr/local/Cellar/python/2.7.13/Frameworks/Python.framework/Versions/2.7/include/python2.7 \
   -I/usr/local/lib/python2.7/site-packages/numpy/core/include && \
 ld -bundle -flat_namespace -undefined suppress -o _bitlib.so bitlib.o bitlib_wrap.o
 
