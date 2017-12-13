@@ -101,10 +101,7 @@ def get_assigned_vehicles(num_vehicles, num_passengers, row_ind, col_ind):
 
 
 # Get assignment of M vehicles to M passengers (redundant vehicles remain unused)
-def get_Hungarian_assignment(vehicle_sample_route_lengths): #, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph):
-     # Assign first round optimally, with Hungarian method
-    #allocation_cost = probabilistic.get_allocation_cost_noisy(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
-    #cost, row_ind, col_ind = get_routing_assignment(allocation_cost)
+def get_Hungarian_assignment(vehicle_sample_route_lengths): 
 
     # Compute first assignment (Hungarian)
     allocation_cost = np.mean(vehicle_sample_route_lengths, 2)
@@ -118,15 +115,6 @@ def get_Hungarian_assignment(vehicle_sample_route_lengths): #, vehicle_pos_noisy
 # Gain: as measured by largest decrease in cost (history-dependent objective)
 def get_greedy_assignment(vehicle_sample_route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph):
     verbose = False
-
-
-    # Assign first round optimally, with Hungarian method
-    #allocation_cost = probabilistic.get_allocation_cost_noisy(route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
-    #cost, row_ind, col_ind = get_routing_assignment(allocation_cost)
-    #print 'Number of assigned vehicles at start: ', len(row_ind)
-
-    # Precompute route lengths from all passengers to samples of vehicle positions
-    #vehicle_sample_route_lengths = get_vehicle_sample_route_lengths(route_lengths, num_samples, vehicle_pos_noisy, passenger_node_ind, nearest_neighbor_searcher, epsilon, noise_model)
 
     # Compute first assignment (Hungarian)
     allocation_cost = np.mean(vehicle_sample_route_lengths, 2)
@@ -189,17 +177,6 @@ def get_greedy_assignment(vehicle_sample_route_lengths, vehicle_pos_noisy, passe
 
 def get_set_greedy_assignment(vehicle_sample_distances, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeats):
 
-    # cost, row_ind, col_ind, vd = get_repeated_routing_assignment(route_lengths, num_samples, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeat=0)
-    
-    # previous_repeat = 0
-    # for repeat in repeats:
-    #     cost, row_ind, col_ind, _ = get_repeated_routing_assignment(route_lengths, num_samples, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeat=repeat,
-    #                                                                          previous_row_ind=row_ind, previous_col_ind=col_ind, previous_repeat=previous_repeat, previous_vehicle_distances=vd)
-    #     previous_repeat = repeat
-
-    ###############
-
-
     # Compute first assignment (Hungarian)
     allocation_cost = np.mean(vehicle_sample_distances, 2)
     cost, row_ind, col_ind = get_routing_assignment(allocation_cost)
@@ -219,27 +196,11 @@ def get_set_greedy_assignment(vehicle_sample_distances, vehicle_pos_noisy, passe
 
 
 def get_repeated_routing_assignment(vehicle_sample_distances, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeat=1,
-                                    previous_row_ind=None, previous_col_ind=None, previous_repeat=None): #, previous_vehicle_distances=None):
-    
-    #assert isinstance(route_lengths, np.ndarray) and len(route_lengths.shape) == 2, (
-    #    'This function requires a contiguous route length matrix. Use the graph_util.normalize() function.')
+                                    previous_row_ind=None, previous_col_ind=None, previous_repeat=None): 
+
 
     if len(vehicle_pos_noisy) == 0:
         return 0., [], [], None
-
-    # Precompute all vehicles' random positions and the distance from every sample to every passenger.
-    # if previous_vehicle_distances is None:
-    #     #num_samples = 100
-    #     vehicle_sample_distances = []
-    #     for p in vehicle_pos_noisy:
-    #         point_locations = np.ones((num_samples, 2)) * p
-    #         vehicle_node_ind_noisy, _ = noise.add_noise(point_locations, nearest_neighbor_searcher, epsilon, noise_model)
-    #         V = np.broadcast_arrays(np.ones((passenger_node_ind.shape[0], 1)), vehicle_node_ind_noisy)[1]
-    #         P = np.broadcast_arrays(np.ones((vehicle_node_ind_noisy.shape[0], 1)), passenger_node_ind)[1]
-    #         vehicle_sample_distances.append(route_lengths[V, P.T])
-    #     vehicle_sample_distances = np.array(vehicle_sample_distances)
-    # else:
-    #     vehicle_sample_distances = previous_vehicle_distances
 
     if len(passenger_node_ind) == 0:
         return 0., [], [], vehicle_sample_distances
@@ -308,6 +269,7 @@ def compute_sampled_cost(route_length_samples, row_ind, col_ind):
         cost += np.mean(np.min(route_length_samples[vehicle_idx, p, :], axis=0))
     return cost / float(num_passengers)
 
+
 def get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_node_ind, nearest_neighbor_searcher, epsilon, noise_model,
                             use_initial_hungarian=False, use_bound=True, refined_bound=True, bound_initialization=BOUND_HUNGARIAN):
     cached_results = {}
@@ -332,7 +294,7 @@ def get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_no
             available_vehicles_binary &= ~(1 << v)
 
     # Get a lower bound on the costs for each passenger.
-    # Best fictious cost is to assign all vehicles to all passengers.
+    # Best ficticious cost is to assign all vehicles to all passengers.
     if refined_bound:
         best_cost_per_passenger = np.mean(np.min(route_length_samples, axis=0), axis=1)
         remaining_best_cost = np.cumsum(best_cost_per_passenger[::-1])[::-1]
@@ -393,8 +355,6 @@ def get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_no
         row_ind.extend(best_solution[i])
         col_ind.extend([i] * nv)
 
-    # else: return row_ind and col_ind from Hungarian assignment
-
     return cost, row_ind, col_ind
 
 
@@ -446,20 +406,12 @@ def old_get_optimal_assignment(route_lengths, vehicle_pos_noisy, passenger_node_
             optimal_matching = matching
             min_matching_allocation_cost = matching_allocation_cost
 
-    #print 'Cost: ', min_matching_allocation_cost
-    #print 'Optimal matching: ', optimal_matching
-
-    #print row_ind
-    #print col_ind
 
     # Add to indeces
     available_vehicles = list(set(range(num_vehicles)) - set(row_ind))
     for l in range(len(optimal_matching)):
         row_ind = np.append(row_ind, available_vehicles[l])
         col_ind = np.append(col_ind, optimal_matching[l])
-
-    #print row_ind
-    #print col_ind
 
     return min_matching_allocation_cost, row_ind, col_ind
 

@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 
+
+
+
 def plot_waiting_time_distr(waiting_time, percentile, bins, fig=None, filename=None, max_value=None, set_x_max=None, set_y_max=None):
     a = 0.5
     if not fig:
