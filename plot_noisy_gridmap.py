@@ -28,7 +28,7 @@ poi_xy = np.array([randx, randy])
 
 
 if noise_model == 'laplace': epsilons = [] #[0.005, 0.01, 0.02, 0.05, 0.1]
-elif noise_model == 'gauss': epsilons = [150.0] #[10.0, 30.0, 60.0]
+elif noise_model == 'gauss': epsilons = [200.0] #[10.0, 30.0, 60.0]
 
 print epsilons
 num_samples = 100
@@ -75,7 +75,8 @@ for epsilon in epsilons:
   plt.scatter(noisy_point_locations[:, 0], noisy_point_locations[:, 1], s=40, c='b', alpha=0.3, edgecolor='none', zorder=10)
   nearest_nodes_xy = util_graph.GetNodePositions(graph, key_node)
   plt.scatter(nearest_nodes_xy[:, 0], nearest_nodes_xy[:, 1], color='red', s=noisy_points_size, zorder=10)
-
+  plt.axis('equal')
+  
   filename = 'figures/graph_%s_noisy_%.3f.eps' % (noise_model, epsilon)
   plt.savefig(filename, format='eps', transparent=True, frameon=False)
   plt.title('Epsilon = %g' % epsilon)
