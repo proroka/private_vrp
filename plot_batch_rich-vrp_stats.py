@@ -11,7 +11,7 @@ import math
 #-------------------------------------
 # Load data
 
-run = 5
+run = 6
 
 # Simulation data and figures
 filename = 'data/rich-vrp_batch_s' + str(run) + '.dat'
@@ -25,6 +25,7 @@ with open(filename, 'rb') as fp:
     num_iter = data['num_iter']
     epsilons = data['epsilons']
     num_vehicles_list = data['num_vehicles_list']
+    num_passengers = data['num_passengers']
     sampled_cost = data['sampled_cost']
 
 #num_vehicles_list = [4, 6, 8, 10, 12, 14]
@@ -101,8 +102,8 @@ for epsilon in epsilons:
         plt.errorbar(num_vehicles_list, m_values, s_values, color=col(ind))
 
         if OPT in algo:
-            K = float(num_vehicles)
-            fac = (1 - ((K-1)/K)**K)
+            K = float(num_vehicles - num_passengers)
+            #fac = (1 - ((K-1)/K)**K)
             fac = 1 / math.e 
             bound =  m_values * (1-fac) + fac * hung
             plt.plot(num_vehicles_list, bound, color='k', label='bound')
@@ -111,7 +112,7 @@ for epsilon in epsilons:
         ind += 1
 
     plt. legend()
-    fig_filename = fig_fn_base + str(int(epsilon)) + str(res) + '_curve.eps'
+    fig_filename = fig_fn_base + str(int(epsilon)) + '_' + str(res) + '_curve.eps'
     plt.show(block=False)
 
     plt.savefig(fig_filename, format='eps', transparent=True, frameon=False)
