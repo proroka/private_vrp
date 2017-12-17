@@ -271,7 +271,8 @@ def compute_sampled_cost(route_length_samples, row_ind, col_ind):
 
 
 def get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_node_ind, nearest_neighbor_searcher, epsilon, noise_model,
-                            use_initial_hungarian=False, use_bound=True, refined_bound=True, bound_initialization=BOUND_HUNGARIAN):
+                           use_initial_hungarian=False, use_bound=True, refined_bound=True, bound_initialization=BOUND_HUNGARIAN,
+                           max_vehicles=0):
     cached_results = {}
 
     #route_length_samples = get_vehicle_sample_route_lengths(route_lengths, vehicle_pos_noisy, passenger_node_ind, nearest_neighbor_searcher, epsilon, noise_model)
@@ -311,14 +312,21 @@ def get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_no
             return cost, solution
 
         # Terminating conditions.
+        num_available_vehicles = bitlib.count_ones(available_vehicles_binary)
+        num_used_vehicles = num_vehicles - num_available_vehicles
+
+        # We overassigned vehicles.
+        if max_vehicles > 0 and num_used_vehicles > max_vehicles:
+            return float('inf'), None
+
         # We've assigned all passengers. Remaining cost is 0.
         if passenger_index >= num_passengers:
             bound[0] = min(cost_so_far, bound[0])
             return 0., []
 
         # We haven't assigned all passengers, but have no more vehicles available.
-        if not use_initial_hungarian and available_vehicles_binary == 0:
-            return float('inf'), None
+        # if not use_initial_hungarian and (max_vehicles > 0 and num_used_vehicles >= max_vehicles) or available_vehicles_binary == 0:
+        #         return float('inf'), None
 
         # Bound.
         bound[2] += 1
@@ -327,7 +335,6 @@ def get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_no
             bound[1] += 1
             return float('inf'), None
 
-        num_available_vehicles = bitlib.count_ones(available_vehicles_binary)
         minimum_cost = float('inf')
         best_solution = None
         # -1 because we need to assign at least one vehicle when not using initial hungarian.

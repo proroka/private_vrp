@@ -20,7 +20,7 @@ BOUND_HUNGARIAN = 1
 #-------------------------------------
 # Global settings
 
-run = 6
+run = 7
 
 # Iterations over vehicle/passenger distributions
 num_iter = 500
@@ -133,7 +133,8 @@ for num_vehicles in num_vehicles_list:
             topt = time.time()
             print 'Computing optimal allocation, using expected cost (epsilon = %g)...' % epsilon
             _, row_ind, col_ind = util_vrp.get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_node_ind, nearest_neighbor_searcher, epsilon, noise_model,
-                                use_initial_hungarian=True, use_bound=False, refined_bound=True, bound_initialization=BOUND_HUNGARIAN)
+                                use_initial_hungarian=True, use_bound=False, refined_bound=True, bound_initialization=BOUND_HUNGARIAN,
+                                max_vehicles=0)
             #print 'Time for opt in BATCH: ', time.time() - topt
             waiting_time[OPT+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
             costs[OPT+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_sampled_cost(route_length_samples, row_ind, col_ind))
