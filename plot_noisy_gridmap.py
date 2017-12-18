@@ -13,7 +13,7 @@ import manhattan.data as manh_data
 noise_model = 'gauss'
 
 # Load graph
-grid_size = 10
+grid_size = 8
 edge_length = 100.
 speed = 10.
 
@@ -28,7 +28,7 @@ poi_xy = np.array([randx, randy])
 
 
 if noise_model == 'laplace': epsilons = [] #[0.005, 0.01, 0.02, 0.05, 0.1]
-elif noise_model == 'gauss': epsilons = [200.0] #[10.0, 30.0, 60.0]
+elif noise_model == 'gauss': epsilons = [100.0] #[10.0, 30.0, 60.0]
 
 print epsilons
 num_samples = 100

@@ -113,7 +113,7 @@ def get_Hungarian_assignment(vehicle_sample_route_lengths):
 
 # Assign a redundant number of vehicles to each passenger; after first round is allocated, assign vehicles provide largest gain
 # Gain: as measured by largest decrease in cost (history-dependent objective)
-def get_greedy_assignment(vehicle_sample_route_lengths, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph):
+def get_greedy_assignment(vehicle_sample_route_lengths, vehicle_pos_noisy, passenger_node_ind, max_assignable_vehicles, epsilon, noise_model, nearest_neighbor_searcher, graph):
     verbose = False
 
     # Compute first assignment (Hungarian)
@@ -121,9 +121,8 @@ def get_greedy_assignment(vehicle_sample_route_lengths, vehicle_pos_noisy, passe
     cost, row_ind, col_ind = get_routing_assignment(allocation_cost)
     if verbose: print 'Allocation cost: \n', allocation_cost
 
-    redundant_vehicles = len(vehicle_pos_noisy) - len(passenger_node_ind)
+    redundant_vehicles = max_assignable_vehicles - len(passenger_node_ind)
     if verbose: print 'Redundant vehicles: ', redundant_vehicles
-    #assert redundant_vehicles >= 0, ('No redundant vehicles: the number of vehicles must be larger than number of passengers.')
 
     # Assign remaining vehicles greedily; up to max number
     available_vehicles, assigned_vehicles = get_assigned_vehicles(len(vehicle_pos_noisy), len(passenger_node_ind), row_ind, col_ind)

@@ -20,20 +20,21 @@ BOUND_HUNGARIAN = 1
 #-------------------------------------
 # Global settings
 
-run = 7
+run = 10
 
 # Iterations over vehicle/passenger distributions
-num_iter = 500
+num_iter = 100
 
 # Save simulation data and figures
 filename = 'data/rich-vrp_batch_s' + str(run) + '.dat'
 fig_fn_base = 'figures/rich-vrp_batch_s' + str(run)
 
 # Total number of cars and passengers
-num_vehicles_list = [4, 6, 8, 10, 12, 14, 16]
+max_assignable_vehicles_list = [4, 6, 8, 10, 12, 14, 16] #, 10, 12, 14, 16]
+num_vehicles = max_assignable_vehicles_list[-1]
 num_passengers = 4
 
-grid_size = 10
+grid_size = 8
 edge_length = 100.
 speed = 10.
 std = 2.0 # sigma on speeds
@@ -42,7 +43,7 @@ std = 2.0 # sigma on speeds
 noise_model = 'gauss' # {'gauss', 'laplace'}
 # Set noise parameter: scale 
 if noise_model == 'laplace': epsilons = [0.02] 
-elif noise_model == 'gauss': epsilons =  [100.0, 200.0]  
+elif noise_model == 'gauss': epsilons =  [100.0]  
 
 plot_on = True
 set_seed = False
@@ -74,7 +75,8 @@ if plot_distr:
 
 num_nodes = len(graph.nodes())
 print 'Num nodes:', num_nodes
-print 'Num vehicles:', num_vehicles_list
+print 'Num assignable vehicles:', max_assignable_vehicles_list
+print 'Num total vehicles:', num_vehicles
 print 'Num passengers:', num_passengers
 
 
@@ -92,9 +94,9 @@ costs = collections.defaultdict(lambda: collections.defaultdict(list))
 #-------------------------------------
 # Run algorithms
 
-for num_vehicles in num_vehicles_list:
+for max_assignable_vehicles in max_assignable_vehicles_list:
     # Settings for set-greedy
-    repeats = range(1, num_vehicles / num_passengers)
+    repeats = range(1, max_assignable_vehicles / num_passengers)
 
     for it in range(num_iter):
 
@@ -116,7 +118,7 @@ for num_vehicles in num_vehicles_list:
         true_allocation_cost = util_vrp.get_allocation_cost(route_lengths, vehicle_node_ind, passenger_node_ind)
         allocation_cost = true_allocation_cost
         cost, row_ind, col_ind = util_vrp.get_routing_assignment(allocation_cost)
-        waiting_time[TRUE][num_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+        waiting_time[TRUE][max_assignable_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
 
         for epsilon in epsilons:
             # Generate noisy vehicle positions
@@ -134,39 +136,39 @@ for num_vehicles in num_vehicles_list:
             print 'Computing optimal allocation, using expected cost (epsilon = %g)...' % epsilon
             _, row_ind, col_ind = util_vrp.get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_node_ind, nearest_neighbor_searcher, epsilon, noise_model,
                                 use_initial_hungarian=True, use_bound=False, refined_bound=True, bound_initialization=BOUND_HUNGARIAN,
-                                max_assignable_vehicles=0)
+                                max_assignable_vehicles=max_assignable_vehicles)
             #print 'Time for opt in BATCH: ', time.time() - topt
-            waiting_time[OPT+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
-            costs[OPT+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_sampled_cost(route_length_samples, row_ind, col_ind))
+            waiting_time[OPT+'_%g_0' % epsilon][max_assignable_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+            costs[OPT+'_%g_0' % epsilon][max_assignable_vehicles].append(util_vrp.compute_sampled_cost(route_length_samples, row_ind, col_ind))
 
             # Compute element-greedy allocation
             print 'Computing element-greedy allocation, using expected cost (epsilon = %g)...' % epsilon
-            _, row_ind, col_ind = util_vrp.get_greedy_assignment(route_length_samples, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
-            waiting_time[EG+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
-            costs[EG+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_sampled_cost(route_length_samples, row_ind, col_ind))
+            _, row_ind, col_ind = util_vrp.get_greedy_assignment(route_length_samples, vehicle_pos_noisy, passenger_node_ind, max_assignable_vehicles, epsilon, noise_model, nearest_neighbor_searcher, graph)
+            waiting_time[EG+'_%g_0' % epsilon][max_assignable_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+            costs[EG+'_%g_0' % epsilon][max_assignable_vehicles].append(util_vrp.compute_sampled_cost(route_length_samples, row_ind, col_ind))
 
             # Compute set-greedy allocation
             # print 'Computing set-greedy allocation, using expected cost (epsilon = %g)...' % epsilon
             # _, row_ind, col_ind = util_vrp.get_set_greedy_assignment(route_length_samples, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph, repeats)
-            # waiting_time[SG+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
-            # costs[SG+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_sampled_cost(route_length_samples, row_ind, col_ind))
+            # waiting_time[SG+'_%g_0' % epsilon][max_assignable_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+            # costs[SG+'_%g_0' % epsilon][max_assignable_vehicles].append(util_vrp.compute_sampled_cost(route_length_samples, row_ind, col_ind))
 
             # Compute Hungarian allocation, redundant vehicles remain unused
             print 'Computing Hungarian allocation, using expected cost (epsilon = %g)...' % epsilon
             _, row_ind, col_ind = util_vrp.get_Hungarian_assignment(route_length_samples) #, vehicle_pos_noisy, passenger_node_ind, epsilon, noise_model, nearest_neighbor_searcher, graph)
-            waiting_time[HUN+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
-            costs[HUN+'_%g_0' % epsilon][num_vehicles].append(util_vrp.compute_sampled_cost(route_length_samples, row_ind, col_ind))
+            waiting_time[HUN+'_%g_0' % epsilon][max_assignable_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+            costs[HUN+'_%g_0' % epsilon][max_assignable_vehicles].append(util_vrp.compute_sampled_cost(route_length_samples, row_ind, col_ind))
 
         # Random
         print 'Computing random VRP...'
         cost, row_ind, col_ind = util_vrp.get_rand_routing_assignment(true_allocation_cost)
-        waiting_time[RAND][num_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
+        waiting_time[RAND][max_assignable_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
 
         e = time.time()
         print 'Time per iteration: ', e-s
 
     with open(filename, 'wb') as fp:
-        fp.write(msgpack.packb({'waiting_time': waiting_time, 'epsilons': epsilons, 'num_vehicles_list': num_vehicles_list, 'num_passengers': num_passengers, 'num_iter': num_iter,
+        fp.write(msgpack.packb({'waiting_time': waiting_time, 'epsilons': epsilons, 'max_assignable_vehicles_list': max_assignable_vehicles_list, 'num_vehicles': num_vehicles, 'num_passengers': num_passengers, 'num_iter': num_iter,
                                 'sampled_cost': costs}))
 
 
@@ -210,8 +212,8 @@ if plot_curve:
     for algo, w_dict in waiting_time.iteritems():
         if algo == RAND:
             continue
-        m_values = np.zeros((len(num_vehicles_list),))
-        s_values = np.zeros((len(num_vehicles_list),))
+        m_values = np.zeros((len(max_assignable_vehicles_list),))
+        s_values = np.zeros((len(max_assignable_vehicles_list),))
         
         for num_vehicles, w in w_dict.iteritems():
             # means over passengers per iter
@@ -219,7 +221,7 @@ if plot_curve:
             for j in range(num_iter):
                 means[j] = np.mean(w[j])
                 
-            index = np.where(np.array(num_vehicles_list)==num_vehicles)
+            index = np.where(np.array(max_assignable_vehicles_list)==num_vehicles)
             m_values[index] = np.mean(w)
             s_values[index] = np.std(means)
             #print '%d : %f' % (num_vehicles, np.mean(w))
@@ -227,8 +229,8 @@ if plot_curve:
         print 'Mean Waiting Time'
         print '%s, : %s' %(algo, m_values)
         print '%s, : %s' %(algo, s_values)
-        plt.plot(num_vehicles_list, m_values, color=col[ind], marker='o', label=algo)
-        plt.errorbar(num_vehicles_list, m_values, s_values, color=col[ind])
+        plt.plot(max_assignable_vehicles_list, m_values, color=col[ind], marker='o', label=algo)
+        plt.errorbar(max_assignable_vehicles_list, m_values, s_values, color=col[ind])
 
 
         plt.title('Mean Waiting Time')
@@ -250,12 +252,12 @@ if plot_sampled_curve:
     for algo, w_dict in costs.iteritems():
         if algo == RAND or algo == TRUE:
             continue
-        m_values = np.zeros((len(num_vehicles_list),))
-        s_values = np.zeros((len(num_vehicles_list),))
+        m_values = np.zeros((len(max_assignable_vehicles_list),))
+        s_values = np.zeros((len(max_assignable_vehicles_list),))
         
         i_list = []
         for num_vehicles, w in w_dict.iteritems():
-            index = np.where(np.array(num_vehicles_list)==num_vehicles)
+            index = np.where(np.array(max_assignable_vehicles_list)==num_vehicles)
             i_list.append(index)
             m_values[index] = np.mean(w)
             s_values[index] = np.std(w)
@@ -264,7 +266,7 @@ if plot_sampled_curve:
         print 'Sampled Cost'
         print '%s, : %s' %(algo, m_values)
         #print i_list
-        plt.plot(num_vehicles_list, m_values, color=col[ind], marker='o', label=algo)
+        plt.plot(max_assignable_vehicles_list, m_values, color=col[ind], marker='o', label=algo)
 
         plt.title('Sampled cost')
         ind += 1
