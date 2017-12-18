@@ -20,17 +20,17 @@ BOUND_HUNGARIAN = 1
 #-------------------------------------
 # Global settings
 
-run = 10
+run = 12
 
 # Iterations over vehicle/passenger distributions
-num_iter = 100
+num_iter = 2
 
 # Save simulation data and figures
 filename = 'data/rich-vrp_batch_s' + str(run) + '.dat'
 fig_fn_base = 'figures/rich-vrp_batch_s' + str(run)
 
 # Total number of cars and passengers
-max_assignable_vehicles_list = [4, 6, 8, 10, 12, 14, 16] #, 10, 12, 14, 16]
+max_assignable_vehicles_list = [4, 6, 8, 10, 12] #, 10, 12, 14, 16]
 num_vehicles = max_assignable_vehicles_list[-1]
 num_passengers = 4
 
