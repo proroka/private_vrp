@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import msgpack
 import seaborn as sns
 
-runs = [11, 12]
+runs = [8]
 
 run_index_offset = 0
 dataframes = []

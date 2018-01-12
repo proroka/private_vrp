@@ -40,15 +40,27 @@ def get_routing_assignment(allocation_cost):
     return cost, row_ind, col_ind
 
 # Random assignment
-def get_rand_routing_assignment(allocation_cost):
+def get_rand_routing_assignment(vehicle_sample_route_lengths, max_assignable_vehicles):
+    
+
+    # make sure all passengers have a vehicle
+    allocation_cost = np.mean(vehicle_sample_route_lengths, 2)
+    row_ind, col_ind = opt.linear_sum_assignment(allocation_cost)
     num_vehicles = allocation_cost.shape[0]
     num_passengers = allocation_cost.shape[1]
-    max_allocations = min(num_vehicles, num_passengers)
-    row_ind = np.random.choice(np.arange(num_vehicles), size=max_allocations, replace=False)
-    col_ind = np.random.choice(np.arange(num_passengers), size=max_allocations, replace=False)
-    cost = allocation_cost[row_ind, col_ind]
 
-    return cost, row_ind, col_ind
+    sz = max_assignable_vehicles-len(row_ind)
+    # add random redundant vehicles
+    remaining_vehicles = list(set(np.arange(num_vehicles)) - set(row_ind))
+    row_ind_2 = np.random.choice(remaining_vehicles, size=sz, replace=False)
+    col_ind_2 = np.random.choice(np.arange(num_passengers), size=sz, replace=True)
+    
+    row_ind_all = np.concatenate((row_ind, row_ind_2), axis=0)
+    col_ind_all = np.concatenate((col_ind, col_ind_2), axis=0)
+
+    cost = allocation_cost[row_ind_all, col_ind_all]
+
+    return cost, row_ind_all, col_ind_all
 
 def get_updated_allocation_cost(vehicle_available, passenger_vehicles, vehicle_distances):
     P = np.array(passenger_vehicles, dtype=np.int32)

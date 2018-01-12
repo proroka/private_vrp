@@ -11,7 +11,7 @@ import math
 #-------------------------------------
 # Load data
 
-run = 10
+run = 16
 
 # Simulation data and figures
 filename = 'data/rich-vrp_batch_s' + str(run) + '.dat'
@@ -31,9 +31,9 @@ with open(filename, 'rb') as fp:
 
 
 # Join run data
-for epsilon in epsilons:
-    for algo, w_dict in items.iteritems():
-        for max_assignable_vehicles, w in w_dict.iteritems():
+# for epsilon in epsilons:
+#     for algo, w_dict in items.iteritems():
+#         for max_assignable_vehicles, w in w_dict.iteritems():
 
 
 
@@ -88,10 +88,10 @@ for epsilon in epsilons:
             hung_std = np.std(hung_uniform)*np.ones(len(max_assignable_vehicles_list))
 
     for algo, w_dict in items.iteritems():
-        if algo == RAND:
-            continue
-        if (not TRUE in algo) and (str(int(epsilon)) not in algo):
-            continue
+        #if algo == RAND:
+        #    continue
+        # if (not TRUE in algo) and (str(int(epsilon)) not in algo):
+        #     continue
 
         m_values = np.zeros((len(max_assignable_vehicles_list),))
         s_values = np.zeros((len(max_assignable_vehicles_list),))
@@ -113,10 +113,10 @@ for epsilon in epsilons:
         print '%s' % (s_values)
         if HUN in algo:
             plt.plot(np.array(max_assignable_vehicles_list), hung_mean, color=col(ind), marker='o', label=algo)
-            plt.errorbar(np.array(max_assignable_vehicles_list) + ind*0.1, hung_mean, hung_std, color=col(ind), fmt='o')
+            plt.errorbar(np.array(max_assignable_vehicles_list) + ind*offset, hung_mean, hung_std, color=col(ind), fmt='o')
         else:
             plt.plot(np.array(max_assignable_vehicles_list), m_values, color=col(ind), marker='o', label=algo)
-            plt.errorbar(np.array(max_assignable_vehicles_list) + ind*0.1, m_values, s_values, color=col(ind), fmt='o')
+            plt.errorbar(np.array(max_assignable_vehicles_list) + ind*offset, m_values, s_values, color=col(ind), fmt='o')
 
         if OPT in algo:
             K = float(max_assignable_vehicles - num_passengers)
