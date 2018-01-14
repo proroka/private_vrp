@@ -17,10 +17,10 @@ import manhattan.data as manh_data
 
 num_vehicles = 8000  # Was 6000 originally.
 drop_passengers_after = 600.  # 10 minutes, was 20 minutes originally.
-min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
-max_timestamp = min_timestamp + 24 * 60 * 60
+min_timestamp = 1464753600.  # 1st of June 2016 midnight NYC.
+max_timestamp = min_timestamp + 2 * 60 * 60
 version = 'normal'  # epsilon, normal, optimal.
-version_info = '10min_8000max_small'
+version_info = '10min_8000max'
 epsilon = 0.02  # Only used when version is set to "epsilon".
 sigma = 100.  # Only used when version is set to "normal".
 algorithm = 'greedy'  # Only used when version is not "optimal".
@@ -266,11 +266,20 @@ for end_batch_time in tqdm.tqdm(end_batch_times):
     ordered_requests = list(current_batch_requests)
     if version.startswith('optimal'):
         # Taxis assigned per passenger.
-        number_allocated.append(float(min(len(available_taxis), len(current_batch_requests))) / float(len(current_batch_requests)))
-        allocation_cost = util_vrp.get_allocation_cost(
-            route_lengths, [t.reported_position for t in ordered_taxis],
-            [r.pickup for r in ordered_requests])
-        c, taxi_indices, request_indices = util_vrp.get_routing_assignment(allocation_cost)
+        if current_batch_requests and available_taxis:
+          number_allocated.append(float(min(len(available_taxis), len(current_batch_requests))) / float(len(current_batch_requests)))
+          allocation_cost = util_vrp.get_allocation_cost(
+              route_lengths, [t.reported_position for t in ordered_taxis],
+              [r.pickup for r in ordered_requests])
+          c, taxi_indices, request_indices = util_vrp.get_routing_assignment(allocation_cost)
+        else:
+          taxi_indices, request_indices = [], []
+          if available_taxis and not current_batch_requests:
+            number_allocated.append(float('nan'))
+          elif not available_taxis and current_batch_requests:
+            number_allocated.append(0.)
+          else:
+            number_allocated.append(float('nan'))
     else:
         if non_redundant:
             max_assignable_vehicles = min(len(available_taxis), len(current_batch_requests))
