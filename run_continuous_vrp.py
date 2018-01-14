@@ -16,17 +16,23 @@ import utilities.vrp as util_vrp
 import manhattan.data as manh_data
 
 num_vehicles = 8000  # Was 6000 originally.
-drop_passengers_after = 600.  # Was 20 minutes originally.
+drop_passengers_after = 600.  # 10 minutes, was 20 minutes originally.
 min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
 max_timestamp = min_timestamp + 24 * 60 * 60
-version = 'epsilon'
-version_info = '10min_8000max'
+version = 'normal'  # epsilon, normal, optimal.
+version_info = '10min_8000max_small'
 epsilon = 0.02  # Only used when version is set to "epsilon".
-allocate_extra_only_when = 1.5  # Allocate more than vehicles only when the number of available vehicles is larger than so many times the requests.
-non_redundant = True  # Only used when version is set to "epsilon"
+sigma = 100.  # Only used when version is set to "normal".
+algorithm = 'greedy'  # Only used when version is not "optimal".
+allocate_extra_only_when = 1.5  # There must be 50% of vehicles left after assignment.
+non_redundant = False  # Only used when version is set to "epsilon" or "normal".
 
 if version == 'epsilon':
     version += '_%g' % epsilon
+    if not non_redundant:
+        version += '_variable_%d' % int(allocate_extra_only_when * 100)
+if version == 'normal':
+    version += '_%g' % sigma
     if not non_redundant:
         version += '_variable_%d' % int(allocate_extra_only_when * 100)
 
@@ -60,8 +66,11 @@ class Taxi(object):
     def __init__(self, identifier, initial_node):
         self.identifier = identifier
         self.true_position = initial_node
-        radius, theta = util_noise.sample_polar_laplace(epsilon, 1)
-        self.noise_offset = util_noise.polar2euclid(radius, theta)[0, :]
+        if version.startswith('epsilon'):
+          radius, theta = util_noise.sample_polar_laplace(epsilon, 1)
+          self.noise_offset = util_noise.polar2euclid(radius, theta)[0, :]
+        elif version.startswith('normal'):
+          self.noise_offset = np.random.normal(0., sigma, (2,))
         self.reported_dropoff_time = None
         self.dropoff_time = None
         self.is_immediately_available = True
@@ -79,7 +88,7 @@ class Taxi(object):
         # Here, the taxi merely makes a promise to pickup the passenger at that time.
         request.add_taxi(self)
     def update_reported_position(self):
-        if version == 'optimal':
+        if version.startswith('optimal'):
             self.reported_position = self.true_position
             return
         xy = util_graph.GetNodePosition(graph, self.true_position) + self.noise_offset
@@ -119,7 +128,7 @@ class Request(object):
         first_taxi_xy = util_graph.GetNodePosition(graph, first_taxi.reported_position)
         for taxi in taxi_ordered_by_pickup[1:]:
             old_true_position = taxi.true_position
-            if version == 'optimal':
+            if version.startswith('optimal'):
                 taxi.true_position = first_taxi.reported_position
             else:
                 taxi.true_position, _ = nearest_neighbor_searcher.Search(first_taxi_xy - taxi.noise_offset)
@@ -255,23 +264,54 @@ for end_batch_time in tqdm.tqdm(end_batch_times):
     # Dispatch.
     ordered_taxis = list(available_taxis)
     ordered_requests = list(current_batch_requests)
-    if version == 'optimal':
-        number_allocated.append(1)
+    if version.startswith('optimal'):
+        # Taxis assigned per passenger.
+        number_allocated.append(float(min(len(available_taxis), len(current_batch_requests))) / float(len(current_batch_requests)))
         allocation_cost = util_vrp.get_allocation_cost(
             route_lengths, [t.reported_position for t in ordered_taxis],
             [r.pickup for r in ordered_requests])
         c, taxi_indices, request_indices = util_vrp.get_routing_assignment(allocation_cost)
     else:
-        if current_batch_requests and not non_redundant:
-            repeat = max(0, int(float(len(available_taxis)) / float(len(current_batch_requests)) - allocate_extra_only_when))
+        if non_redundant:
+            max_assignable_vehicles = min(len(available_taxis), len(current_batch_requests))
         else:
-            repeat = 0
-        number_allocated.append(repeat + 1)
-        vehicle_node_pos = util_graph.GetNodePositions(graph, [t.reported_position for t in ordered_taxis])
-        c, taxi_indices, request_indices, _ = util_vrp.get_repeated_routing_assignment(
-            route_lengths, vehicle_node_pos,
-            np.array([r.pickup for r in ordered_requests], dtype=np.uint32),
-            epsilon, nearest_neighbor_searcher, graph, repeat=repeat)
+            max_assignable_vehicles = len(available_taxis) - int((allocate_extra_only_when - 1.) * len(current_batch_requests))
+            if max_assignable_vehicles < len(current_batch_requests):
+              max_assignable_vehicles = min(len(available_taxis), len(current_batch_requests))
+
+        if ordered_requests and max_assignable_vehicles:
+            vehicle_pos_noisy = util_graph.GetNodePositions(graph, [t.reported_position for t in ordered_taxis])
+            passenger_node_ind = np.array([r.pickup for r in ordered_requests], dtype=np.uint32)
+            route_length_samples = util_vrp.get_vehicle_sample_route_lengths(
+                route_lengths, 100, vehicle_pos_noisy, passenger_node_ind, nearest_neighbor_searcher,
+                epsilon if version.startswith('epsilon') else sigma,
+                'laplace' if version.startswith('epsilon') else 'gauss')
+            if algorithm == 'greedy':
+                c, taxi_indices, request_indices = util_vrp.get_greedy_assignment(
+                    route_length_samples, vehicle_pos_noisy, passenger_node_ind, max_assignable_vehicles,
+                    epsilon if version.startswith('epsilon') else sigma,
+                    'laplace' if version.startswith('epsilon') else 'gauss',
+                    nearest_neighbor_searcher, graph)
+                number_allocated.append(float(max_assignable_vehicles) / float(len(current_batch_requests)))
+            else:
+                repeat = max(0, int(float(max_assignable_vehicles) / float(len(current_batch_requests))) - 1)
+                max_assignable_vehicles = repeat * len(current_batch_requests)
+                number_allocated.append(float(repeat + 1))
+                c, taxi_indices, request_indices, _ = util_vrp.get_repeated_routing_assignment(
+                    route_length_samples, vehicle_pos_noisy, passenger_node_ind,
+                    epsilon if version.startswith('epsilon') else sigma,
+                    'laplace' if version.startswith('epsilon') else 'gauss',
+                    nearest_neighbor_searcher, graph, repeat=repeat)
+            assert max_assignable_vehicles == len(taxi_indices)
+        else:
+            taxi_indices, request_indices = [], []
+            if max_assignable_vehicles and not ordered_requests:
+              number_allocated.append(float('nan'))
+            elif not max_assignable_vehicles and ordered_requests:
+              number_allocated.append(0.)
+            else:
+              number_allocated.append(float('nan'))
+
     # Ask taxis to pickup.
     waiting_times = collections.defaultdict(lambda: np.inf)  # Waiting times for each request.
     for taxi_index, request_index in zip(taxi_indices, request_indices):
