@@ -18,7 +18,7 @@ import manhattan.data as manh_data
 num_vehicles = 8000  # Was 6000 originally.
 drop_passengers_after = 600.  # 10 minutes, was 20 minutes originally.
 min_timestamp = 1464753600.  # 1st of June 2016 midnight NYC.
-max_timestamp = min_timestamp + 2 * 60 * 60
+max_timestamp = min_timestamp + 24 * 60 * 60
 version = 'normal'  # epsilon, normal, optimal.
 version_info = '10min_8000max'
 epsilon = 0.02  # Only used when version is set to "epsilon".
