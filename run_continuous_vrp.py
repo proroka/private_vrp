@@ -17,10 +17,11 @@ import manhattan.data as manh_data
 
 num_vehicles = 8000  # Was 6000 originally.
 drop_passengers_after = 600.  # 10 minutes, was 20 minutes originally.
+min_vehicle_fleet = 200  # Minimum number of vehicle in the fleet (was 0 originally).
 min_timestamp = 1464753600.  # 1st of June 2016 midnight NYC.
 max_timestamp = min_timestamp + 24 * 60 * 60
 version = 'normal'  # epsilon, normal, optimal.
-version_info = '10min_8000max'
+version_info = '10min_8000max_200veh'
 epsilon = 0.02  # Only used when version is set to "epsilon".
 sigma = 100.  # Only used when version is set to "normal".
 algorithm = 'greedy'  # Only used when version is not "optimal".
@@ -178,7 +179,7 @@ class PriorityQueue(object):
 def get_taxi_fleet_size(current_time):
     if taxi_fleet_filename:
         n = extra_fleet * np.interp(np.linspace(current_time - fleet_window_in_secs, current_time + fleet_window_in_secs, 10), taxi_fleet_timestamps, taxi_fleet_size)
-        return int(min(num_vehicles, np.max(n)))
+        return int(max(min(num_vehicles, np.max(n)), min_vehicle_fleet))
     return num_vehicles
 
 ignore_ride_distance = 300.

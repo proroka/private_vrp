@@ -5,43 +5,53 @@ from matplotlib.dates import HourLocator, DateFormatter
 import msgpack
 import time
 
+main_plot_label = 'Obfuscated redundant'
 
 filenames = {
     # 'Non-private': 'data/simulation_optimal.dat',simulation_optimal_10min_8000max
-    'Non-private': 'data/simulation_optimal_10min_8000max.dat',
+    # 'Non-private': 'data/simulation_optimal_10min_8000max.dat',
     # 'Private non-redundant': 'data/simulation_epsilon_0.02.dat',
-    'Private non-redundant': 'data/simulation_epsilon_0.02_10min_8000max.dat',
+    # 'Private non-redundant': 'data/simulation_epsilon_0.02_10min_8000max.dat',
     # 'Private multi-allocation (1)': 'data/simulation_epsilon_0.02_variable.dat',
     # 'Private multi-allocation (0.5)': 'data/simulation_epsilon_0.02_variable_50.dat',
     # 'Private redundant': 'data/simulation_epsilon_0.02_variable_150.dat',
-    'Private redundant': 'data/simulation_epsilon_0.02_variable_150_10min_8000max.dat',
+    # 'Private redundant': 'data/simulation_epsilon_0.02_variable_150_10min_8000max.dat',
     # 'Private multi-allocation (2.0)': 'data/simulation_epsilon_0.02_variable_200.dat',
+    'Non-obfuscated': 'data/simulation_optimal_10min_8000max.dat',
+    'Obfuscated': 'data/simulation_normal_100_10min_8000max.dat',
+    'Obfuscated redundant': 'data/simulation_normal_100_variable_150_10min_8000max.dat',
 }
 
 colors = {
-    'Non-private': '#e98c50',
-    'Private non-redundant': '#33a74d',
+    # 'Non-private': '#e98c50',
+    'Non-obfuscated': '#e98c50',
+    # 'Private non-redundant': '#33a74d',
     # 'Private multi-allocation (1)': 'b',
     # 'Private multi-allocation (0.5)': 'c',
-    'Private redundant': '#d03237',
+    # 'Private redundant': '#d03237',
+    'Obfuscated': '#33a74d',
+    'Obfuscated redundant': '#d03237',
     # 'Private multi-allocation (2.0)': 'k',
 }
 
 order = [
-    'Non-private',
-    'Private redundant',
-    'Private non-redundant',
+    # 'Non-private',
+    # 'Private redundant',
+    # 'Private non-redundant',
     # 'Private multi-allocation (1)',
     # 'Private multi-allocation (0.5)',
     # 'Private multi-allocation (2.0)',
+    'Non-obfuscated',
+    'Obfuscated',
+    'Obfuscated redundant',
 ]
 
 
-min_timestamp = time.mktime(datetime.date(2016, 6, 1).timetuple())
+min_timestamp = 1464753600.  # 1st of June 2016 midnight NYC.
 max_timestamp = min_timestamp + 24 * 60 * 60
 batching_duration = 20
-smoothing_window_mins = 5 #10
-smoothing_window_stride = 5 #10
+smoothing_window_mins = 5  # 10
+smoothing_window_stride = 5  # 10
 
 
 TIME = 0
@@ -136,7 +146,7 @@ def create_multi_time_figure(data, what, label, colors, k):
       v = data[k]
       plot_smooth_data(v[TIME], v[w], c, l, ax=ax)
       ax.set_ylabel(l)
-      
+
       for tl in ax.get_yticklabels():
         tl.set_color(c)
     ax1.set_ylim(bottom=0, top=5)
@@ -230,31 +240,31 @@ data = {}
 for k, v in filenames.iteritems():
     data[k] = load_data(v)
 
-# create_time_figure(data, WAITING_TIME, 'Waiting time')
-# filename = 'figures/simulation_waiting_time.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+create_time_figure(data, WAITING_TIME, 'Waiting time')
+filename = 'figures/simulation_waiting_time.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-# create_time_figure(data, AVAILABLE_TAXIS, 'Available taxis')
-# filename = 'figures/simulation_taxis.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+create_time_figure(data, AVAILABLE_TAXIS, 'Available taxis')
+filename = 'figures/simulation_taxis.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-# create_time_figure(data, REQUESTS, 'Requests to serve')
-# filename = 'figures/simulation_requests.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+create_time_figure(data, REQUESTS, 'Requests to serve')
+filename = 'figures/simulation_requests.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-# create_time_figure(data, DROPPED_REQUESTS, 'Dropped requests')
-# filename = 'figures/simulation_dropped_requests.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+create_time_figure(data, DROPPED_REQUESTS, 'Dropped requests')
+filename = 'figures/simulation_dropped_requests.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-# create_time_figure(data, REDUNDANCY, 'D')
-# filename = 'figures/simulation_redundancy.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+create_time_figure(data, REDUNDANCY, 'D')
+filename = 'figures/simulation_redundancy.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-# create_bar_figure(data, WAITING_TIME_FULL, 'Average waiting time')
-# filename = 'figures/simulation_mean_waiting_time.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+create_bar_figure(data, WAITING_TIME_FULL, 'Average waiting time')
+filename = 'figures/simulation_mean_waiting_time.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-create_multi_time_figure(data, [REDUNDANCY, WAITING_TIME], ['D', 'Waiting time'], ['#e98c50', '#33a74d'], 'Private redundant')
+create_multi_time_figure(data, [REDUNDANCY, WAITING_TIME], ['D', 'Waiting time'], ['#e98c50', '#33a74d'], main_plot_label)
 filename = 'figures/simulation_waiting_time_vs_redundancy.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
