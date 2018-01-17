@@ -20,13 +20,13 @@ drop_passengers_after = 600.  # 10 minutes, was 20 minutes originally.
 min_vehicle_fleet = 200  # Minimum number of vehicle in the fleet (was 0 originally).
 min_timestamp = 1464753600.  # 1st of June 2016 midnight NYC.
 max_timestamp = min_timestamp + 24 * 60 * 60
-version = 'normal'  # epsilon, normal, optimal.
+version = 'optimal'  # epsilon, normal, optimal.
 version_info = '10min_8000max_200veh'
 epsilon = 0.02  # Only used when version is set to "epsilon".
 sigma = 100.  # Only used when version is set to "normal".
 algorithm = 'greedy'  # Only used when version is not "optimal".
 allocate_extra_only_when = 1.5  # There must be 50% of vehicles left after assignment.
-non_redundant = False  # Only used when version is set to "epsilon" or "normal".
+non_redundant = True  # Only used when version is set to "epsilon" or "normal".
 
 if version == 'epsilon':
     version += '_%g' % epsilon

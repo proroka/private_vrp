@@ -6,6 +6,7 @@ import msgpack
 import time
 
 main_plot_label = 'Obfuscated redundant'
+truncate_data = True # truncates waiting timeo
 
 filenames = {
     # 'Non-private': 'data/simulation_optimal.dat',simulation_optimal_10min_8000max
@@ -73,6 +74,10 @@ def load_data(filename):
     batch_num_requests = data['batch_num_requests']
     batch_dropped_requests = data['batch_dropped_requests']
     batch_waiting_times = data['batch_waiting_times']
+    if truncate_data:
+        for i, w in enumerate(batch_waiting_times):
+            batch_waiting_times[i] = list(np.minimum(batch_waiting_times[i], 600.))
+
     if 'number_allocated' in data:
       batch_redundancy = data['number_allocated']
     else:
@@ -227,7 +232,7 @@ def create_violin_figure(data, what, label, percentile_cut=5):
             if t in common_times:
                 all_values.extend(v[what][i])
         all_values = np.array(all_values)
-        print '  %s: %.3f +- %.3f [s]  median: %.3f' % (k, np.mean(all_values), np.std(all_values), np.median(all_values))
+        print '  %s: %.3f +- %.3f [s]  median: %.3f  95th percentile: %.3f' % (k, np.mean(all_values), np.std(all_values), np.median(all_values), np.percentile(all_values, 95))
         ordered_values.append(all_values)
     fig, ax = plt.subplots(figsize=(8, 6 * .7))
     sns.violinplot(data=ordered_values, cut=0, gridsize=1000, palette=[colors[k] for k in order])

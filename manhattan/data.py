@@ -55,7 +55,11 @@ def LoadMapData(cache_folder='data', use_small_graph=False, default_speed=4.18):
         else:
           data['time'] = float(data['time'])
           data['speed'] = float(data['speed'])
-        graph.add_edge(u, v, key, **data)
+
+        #print 'key is: ', key
+        #print 'data is: ', data
+        #graph.add_edge(u, v, key, **data)
+        graph.add_edge(u, v, **data)
     return graph
 
 def LoadShortestPathData(graph, cache_folder='data', must_recompute=False):
@@ -217,4 +221,5 @@ def UpdateEdgeTime(graph, taxi_data, nearest_neighbor_searcher, default_speed=No
             speed = default_speed
         data['time'] = data['length'] / speed
         data['speed'] = speed
-        graph.add_edge(u, v, key, **data)
+        #graph.add_edge(u, v, key, **data)
+        graph.add_edge(u, v, **data)
