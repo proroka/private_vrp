@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 from matplotlib.dates import HourLocator, DateFormatter
 import msgpack
 import time
+from scipy.stats import gaussian_kde
 
 main_plot_label = 'Obfuscated redundant'
-truncate_data = True # truncates waiting timeo
+truncate_data = False # truncates waiting timeo
 
 filenames = {
     # 'Non-private': 'data/simulation_optimal.dat',simulation_optimal_10min_8000max
@@ -21,6 +22,9 @@ filenames = {
     'Non-obfuscated': 'data/simulation_optimal_10min_8000max.dat',
     'Obfuscated': 'data/simulation_normal_100_10min_8000max.dat',
     'Obfuscated redundant': 'data/simulation_normal_100_variable_150_10min_8000max.dat',
+    # 'Non-obfuscated': 'data/simulation_optimal_10min_8000max_200veh.dat',
+    # 'Obfuscated': 'data/simulation_normal_100_10min_8000max_200veh.dat',
+    # 'Obfuscated redundant': 'data/simulation_normal_100_variable_150_10min_8000max_200veh.dat',
 }
 
 colors = {
@@ -177,6 +181,36 @@ def create_special_scatter_figure(data):
   plt.legend()
 
 
+def create_density_scatter_figure(data):
+  for k in order:
+    fig, ax = plt.subplots(figsize=(3,7))
+    y = data[k][WAITING_TIME]
+    x = (data[k][TOTAL_TAXIS] - data[k][AVAILABLE_TAXIS]) / data[k][TOTAL_TAXIS]
+
+    # remove NaNs and clip to same length
+    maskx = ~np.isnan(x)
+    masky = ~np.isnan(y)
+    if maskx.shape[0] < masky.shape[0]:
+        mask = maskx
+    else: 
+        mask = masky
+
+    xy = np.vstack([x[mask],y[mask]])
+    z = gaussian_kde(xy)(xy)
+    idx = z.argsort()
+    x, y, z = x[idx], y[idx], z[idx]
+
+    plt.scatter(x, y, c=z, alpha=0.9)
+    plt.xlim(left=0.3, right=1.)
+    plt.ylim(bottom=0., top=800.)
+    plt.xlabel('Occupied ratio')
+    plt.ylabel('Waiting time')
+
+    filename = 'figures/simulation_scatter__density_occupied_' + k + '.eps'
+    plt.savefig(filename, format='eps', transparent=True, frameon=False)
+
+
+
 def create_bar_figure(data, what, label):
     common_times = None
     for k, v in data.iteritems():
@@ -249,39 +283,41 @@ create_time_figure(data, WAITING_TIME, 'Waiting time')
 filename = 'figures/simulation_waiting_time.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-create_time_figure(data, AVAILABLE_TAXIS, 'Available taxis')
-filename = 'figures/simulation_taxis.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+# create_time_figure(data, AVAILABLE_TAXIS, 'Available taxis')
+# filename = 'figures/simulation_taxis.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-create_time_figure(data, REQUESTS, 'Requests to serve')
-filename = 'figures/simulation_requests.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+# create_time_figure(data, REQUESTS, 'Requests to serve')
+# filename = 'figures/simulation_requests.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-create_time_figure(data, DROPPED_REQUESTS, 'Dropped requests')
-filename = 'figures/simulation_dropped_requests.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+# create_time_figure(data, DROPPED_REQUESTS, 'Dropped requests')
+# filename = 'figures/simulation_dropped_requests.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-create_time_figure(data, REDUNDANCY, 'D')
-filename = 'figures/simulation_redundancy.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+# create_time_figure(data, REDUNDANCY, 'D')
+# filename = 'figures/simulation_redundancy.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-create_bar_figure(data, WAITING_TIME_FULL, 'Average waiting time')
-filename = 'figures/simulation_mean_waiting_time.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+# create_bar_figure(data, WAITING_TIME_FULL, 'Average waiting time')
+# filename = 'figures/simulation_mean_waiting_time.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-create_multi_time_figure(data, [REDUNDANCY, WAITING_TIME], ['D', 'Waiting time'], ['#e98c50', '#33a74d'], main_plot_label)
-filename = 'figures/simulation_waiting_time_vs_redundancy.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+# create_multi_time_figure(data, [REDUNDANCY, WAITING_TIME], ['D', 'Waiting time'], ['#e98c50', '#33a74d'], main_plot_label)
+# filename = 'figures/simulation_waiting_time_vs_redundancy.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-create_special_scatter_figure(data)
-filename = 'figures/simulation_scatter_occupied.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+# create_special_scatter_figure(data)
+# filename = 'figures/simulation_scatter_occupied.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-import seaborn as sns
-sns.reset_orig()
-create_violin_figure(data, WAITING_TIME_FULL, 'Waiting time')
-filename = 'figures/simulation_violin_waiting_time.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+create_density_scatter_figure(data)
+
+# import seaborn as sns
+# sns.reset_orig()
+# create_violin_figure(data, WAITING_TIME_FULL, 'Waiting time')
+# filename = 'figures/simulation_violin_waiting_time.eps'
+# plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 plt.show(block=False)
 

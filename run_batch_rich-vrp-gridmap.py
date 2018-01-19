@@ -20,12 +20,13 @@ BOUND_HUNGARIAN = 1
 #------------------------------------- 
 # Global settings
 
-run = 18
+run = 19
 
 # Iterations over vehicle/passenger distributions
 num_iter = 500
-compute_optimal = False
+compute_optimal = True
 include_set_greedy = True
+use_initial_hungarian = False
 
 # Save simulation data and figures
 filename = 'data/rich-vrp_batch_s' + str(run) + '.dat'
@@ -33,7 +34,7 @@ fig_fn_base = 'figures/rich-vrp_batch_s' + str(run)
 
 # Total number of cars and passengers
 if compute_optimal:
-    max_assignable_vehicles_list = [4, 6, 8, 10, 12, 14, 16] 
+    max_assignable_vehicles_list = [4, 6, 8, 10, 12] 
 else:
     max_assignable_vehicles_list = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 num_vehicles = max_assignable_vehicles_list[-1]
@@ -140,7 +141,7 @@ for max_assignable_vehicles in max_assignable_vehicles_list:
             if compute_optimal:
                 print 'Computing optimal allocation, using expected cost (epsilon = %g)...' % epsilon
                 _, row_ind, col_ind = util_vrp.get_optimal_assignment(route_length_samples, vehicle_pos_noisy, passenger_node_ind, nearest_neighbor_searcher, epsilon, noise_model,
-                                    use_initial_hungarian=True, use_bound=False, refined_bound=True, bound_initialization=BOUND_HUNGARIAN,
+                                    use_initial_hungarian=use_initial_hungarian, use_bound=False, refined_bound=True, bound_initialization=BOUND_HUNGARIAN,
                                     max_assignable_vehicles=max_assignable_vehicles)
                 #print 'Time for opt in BATCH: ', time.time() - topt
                 waiting_time[OPT+'_%g' % epsilon][max_assignable_vehicles].append(util_vrp.compute_waiting_times(route_lengths, vehicle_node_ind, passenger_node_ind, row_ind, col_ind))
