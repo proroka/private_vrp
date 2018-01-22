@@ -125,7 +125,7 @@ def plot_smooth_data(times, values, color, label, ax=None):
 
 
 def create_time_figure(data, what, label):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8,3.5))
     if what == DROPPED_REQUESTS:
         print 'Number of dropped requests:'
     for k in order:
@@ -133,15 +133,20 @@ def create_time_figure(data, what, label):
         plot_smooth_data(v[TIME], v[what], colors[k], k)
         if what == DROPPED_REQUESTS:
             print '  %s: %d ~= %g%%' % (k, np.sum(v[what]), np.sum(v[what]) / (11e6 / 30.) * 100.)
-    ax.xaxis.set_major_locator(HourLocator(interval=4))
-    ax.xaxis.set_minor_locator(HourLocator())
-    ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-    ax.fmt_xdata = DateFormatter('%H:%M')
+    #ax.xaxis.set_major_locator(HourLocator(interval=4))
+    #ax.xaxis.set_minor_locator(HourLocator())
+    #ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+    #ax.fmt_xdata = DateFormatter('%H:%M')
     ax.grid(True)
     ax.set_xlabel('Time')
     ax.set_ylabel(label)
     ax.set_xlim(left=datetime.datetime.fromtimestamp(min_timestamp), right=datetime.datetime.fromtimestamp(max_timestamp))
-    ax.set_ylim(bottom=0)
+    if what == REDUNDANCY:
+        ax.set_ylim((0,4))
+    elif what == WAITING_TIME:  
+        ax.set_ylim((0,1000))
+    else:
+       ax.set_ylim(bottom=0)
     plt.legend()
 
 
@@ -283,9 +288,9 @@ create_time_figure(data, WAITING_TIME, 'Waiting time')
 filename = 'figures/simulation_waiting_time.eps'
 plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-# create_time_figure(data, AVAILABLE_TAXIS, 'Available taxis')
-# filename = 'figures/simulation_taxis.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+create_time_figure(data, AVAILABLE_TAXIS, 'Available taxis')
+filename = 'figures/simulation_taxis.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 # create_time_figure(data, REQUESTS, 'Requests to serve')
 # filename = 'figures/simulation_requests.eps'
@@ -295,21 +300,21 @@ plt.savefig(filename, format='eps', transparent=True, frameon=False)
 # filename = 'figures/simulation_dropped_requests.eps'
 # plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-# create_time_figure(data, REDUNDANCY, 'D')
-# filename = 'figures/simulation_redundancy.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+create_time_figure(data, REDUNDANCY, 'D')
+filename = 'figures/simulation_redundancy.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-# create_bar_figure(data, WAITING_TIME_FULL, 'Average waiting time')
-# filename = 'figures/simulation_mean_waiting_time.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+create_bar_figure(data, WAITING_TIME_FULL, 'Average waiting time')
+filename = 'figures/simulation_mean_waiting_time.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-# create_multi_time_figure(data, [REDUNDANCY, WAITING_TIME], ['D', 'Waiting time'], ['#e98c50', '#33a74d'], main_plot_label)
-# filename = 'figures/simulation_waiting_time_vs_redundancy.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+create_multi_time_figure(data, [REDUNDANCY, WAITING_TIME], ['D', 'Waiting time'], ['#e98c50', '#33a74d'], main_plot_label)
+filename = 'figures/simulation_waiting_time_vs_redundancy.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
-# create_special_scatter_figure(data)
-# filename = 'figures/simulation_scatter_occupied.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+create_special_scatter_figure(data)
+filename = 'figures/simulation_scatter_occupied.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 create_density_scatter_figure(data)
 

@@ -13,6 +13,7 @@ import math
 
 runs = [18] # run without optimal, 10 to 100 robots, 500 iter, 16x16 grid
 #runs = [16, 17] # runs with optimal, 4 to 16 robots, 250 iter each, 16x16 grid
+#runs = [19] # run where optimal is without initial assignment; 500 iter, 4 to 12 robots; 16x16 grid
 
 conf_int = True # return confidence interval or else std dev
 
@@ -69,10 +70,13 @@ def err(a):
 
 
 #col = get_cmap(len(epsilons)*6)
-if len(runs)>1:
+if 18 in runs:
+    col = ['orange','green','g','m','b','c']
+elif 16 in runs:
+    col = ['r','g','g','m','b','c']
+elif 19 in runs:        
     col = ['r','green','g','m','b','c']
-else:
-    col = ['r','y','g','m','b','c']
+
 
 #col = ['r','purple','g','m','b','cyan']
 
@@ -86,7 +90,7 @@ normalize = True
 
 for epsilon in epsilons:
     print 'Epsilon: ', epsilon
-    fig = plt.figure(figsize=(9, 6), frameon=False)
+    fig = plt.figure(figsize=(5, 6), frameon=False)
     ax = plt.gca()
     ind = 0
     offset = 0
@@ -159,7 +163,7 @@ for epsilon in epsilons:
         elif TRUE in algo:
             plt.plot(np.array(max_assignable_vehicles_list), true_mean, color='black', lw=2.0, label=algo)
             ax.fill_between(np.array(max_assignable_vehicles_list), true_lower, true_upper, facecolor='black', alpha=0.5)
-        elif SG in algo and len(runs)>1:
+        elif SG in algo and 18 not in runs: # plot set greedy only for long run
             continue
         else:
             plt.plot(np.array(max_assignable_vehicles_list), m_values, color=col[ind], lw=2.0, label=algo)
@@ -175,11 +179,15 @@ for epsilon in epsilons:
 
         ind += 1
 
-    if len(runs)>1:
+    if 16 in runs:
+        plt.ylim((0.6, 1.05))
+    elif 18 in runs: 
+        plt.ylim((0.2, 1.1))
+    elif 19 in runs:
         plt.ylim((0.6, 1.1))
-    else: plt.ylim((0.2, 1.1))
 
     plt. legend()
+    ax.grid(True)
     fig_filename = fig_fn_base + '_' + str(int(epsilon)) + '_curve.eps'
     plt.show(block=False)
 
