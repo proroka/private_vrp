@@ -82,14 +82,16 @@ def LoadShortestPathData(graph, cache_folder='data', must_recompute=False):
     return route_lengths
 
 def LoadTaxiData(graph, cache_folder='data', synthetic_rides=False, must_recompute=False,
-                 num_synthetic_rides=200, synthetic_ride_speed=10., max_rides=None):
+                 num_synthetic_rides=200, synthetic_ride_speed=10., max_rides=None,
+                 binary_data_filename=None):
     def FromLatLong(lat_long):
         x, y, _, _ = utm.from_latlon(*lat_long)
         return np.array([x, y])
 
     # Load taxi data.
     original_data_filename_pattern = os.path.join(cache_folder, 'yellow_tripdata_*.csv')
-    binary_data_filename = os.path.join(cache_folder, 'taxi_%s%s.pickle' % ('synthetic_' if synthetic_rides else '', GetCachedFilenamePrefix(graph)))
+    if binary_data_filename is None:
+      binary_data_filename = os.path.join(cache_folder, 'taxi_%s%s.pickle' % ('synthetic_' if synthetic_rides else '', GetCachedFilenamePrefix(graph)))
     try:
         if must_recompute: raise IOError('Forced dummy error')
         with open(binary_data_filename, 'rb') as fp:
