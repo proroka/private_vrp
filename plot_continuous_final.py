@@ -271,6 +271,7 @@ for ax, s in zip(axes[1], range(0, 24, slices)):
   ax.set_ylim((4505860, 4518520))
   ax.axes.get_xaxis().set_ticks([])
   ax.axes.get_yaxis().set_ticks([])
+plt.tight_layout()
 # filename = 'figures/final_density.eps'
 # plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
