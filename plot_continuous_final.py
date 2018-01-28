@@ -244,7 +244,7 @@ plt.tight_layout()
 import seaborn as sns
 sns.reset_orig()
 agg_over_hours = 1
-f, axes = plt.subplots(2, n, sharex=True, sharey=True, figsize=(2 * n, 2))
+f, axes = plt.subplots(2, n, sharex=True, sharey=True, figsize=(2 * n, 2 * 2))
 for ax, s in zip(axes[0], range(0, 24, slices)):
   current_t = s * 60 * 60 + min_timestamp
   flatten_xy = []
