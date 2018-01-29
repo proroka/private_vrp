@@ -15,17 +15,29 @@ import scipy.special as spc
 #-------------------------------------
 # Functions
 
+# To get a standard deviation of 100:
+# For Gaussian: epsilon = 100             (i.e., sigma)
+# For Laplace: epsilon = np.sqrt(3) / 100 (i.e., scale parameter)
+# For Uniform: epsilon = 2 * 100          (i.e., radius)
+
 # Add noise to positions
 def add_noise(point_locations, nearest_neighbor_searcher, epsilon, noise_model):
-    
+
     # Compute noisy positions according to distribution
     if noise_model == 'gauss':
         noise_vector = np.random.normal(0.0, epsilon, (point_locations.shape[0],2))
         noisy_point_locations = point_locations + noise_vector
 
-    elif noise_model == 'laplace': 
+    elif noise_model == 'laplace':
         radius, theta = sample_polar_laplace(epsilon, point_locations.shape[0])
         noise_vector = polar2euclid(radius, theta)
+        noisy_point_locations = point_locations + noise_vector
+
+    elif noise_model == 'uniform':
+        theta = 2. * np.pi * np.random.rand(point_locations.shape[0])
+        radius = np.random.rand(point_locations.shape[0]) + np.random.rand(point_locations.shape[0])
+        radius[radius > 1] = 2 - radius[radius > 1]
+        noise_vector = polar2euclid(radius * epsilon, theta)
         noisy_point_locations = point_locations + noise_vector
 
     else: print 'Noise model not known.'
