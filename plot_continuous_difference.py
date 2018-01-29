@@ -19,12 +19,12 @@ filenames = {
     # 'Private redundant': 'data/simulation_epsilon_0.02_variable_150.dat',
     # 'Private redundant': 'data/simulation_epsilon_0.02_variable_150_10min_8000max.dat',
     # 'Private multi-allocation (2.0)': 'data/simulation_epsilon_0.02_variable_200.dat',
-    'Non-obfuscated': 'data/simulation_optimal_10min_8000max.dat',
-    'Obfuscated': 'data/simulation_normal_100_10min_8000max.dat',
-    'Obfuscated redundant': 'data/simulation_normal_100_variable_150_10min_8000max.dat',
-    # 'Non-obfuscated': 'data/simulation_optimal_10min_8000max_200veh.dat',
-    # 'Obfuscated': 'data/simulation_normal_100_10min_8000max_200veh.dat',
-    # 'Obfuscated redundant': 'data/simulation_normal_100_variable_150_10min_8000max_200veh.dat',
+    # 'Non-obfuscated': 'data/simulation_optimal_10min_8000max.dat',
+    # 'Obfuscated': 'data/simulation_normal_100_10min_8000max.dat',
+    # 'Obfuscated redundant': 'data/simulation_normal_100_variable_150_10min_8000max.dat',
+    'Non-obfuscated': 'data/simulation_optimal_10min_8000max_200veh.dat',
+    'Obfuscated': 'data/simulation_normal_100_10min_8000max_200veh.dat',
+    'Obfuscated redundant': 'data/simulation_normal_100_variable_150_10min_8000max_200veh.dat',
 }
 
 colors = {

@@ -76,7 +76,8 @@ elif 16 in runs:
     col = ['r','g','g','m','b','c']
 elif 19 in runs:        
     col = ['r','green','g','m','b','c']
-
+else:
+    col = ['r','green','g','m','b','c']
 
 #col = ['r','purple','g','m','b','cyan']
 
@@ -90,7 +91,7 @@ normalize = True
 
 for epsilon in epsilons:
     print 'Epsilon: ', epsilon
-    fig = plt.figure(figsize=(5, 6), frameon=False)
+    fig = plt.figure(figsize=(10, 5), frameon=False)
     ax = plt.gca()
     ind = 0
     offset = 0
@@ -158,15 +159,15 @@ for epsilon in epsilons:
             l_values[index], u_values[index] = err(means)
 
         if HUN in algo:
-            plt.plot(np.array(max_assignable_vehicles_list), hung_mean, color='black', ls='--', lw=2.0, label=algo)
+            plt.plot(np.array(max_assignable_vehicles_list), hung_mean, color='black', ls='--', lw=2.0, label=algo, marker='o', ms=8.0)
             #plt.errorbar(np.array(max_assignable_vehicles_list) + ind*offset, hung_mean, hung_std, color=col(ind), fmt='o')
         elif TRUE in algo:
-            plt.plot(np.array(max_assignable_vehicles_list), true_mean, color='black', lw=2.0, label=algo)
+            plt.plot(np.array(max_assignable_vehicles_list), true_mean, color='black', lw=2.0, label=algo,marker='o', ms=8.0)
             ax.fill_between(np.array(max_assignable_vehicles_list), true_lower, true_upper, facecolor='black', alpha=0.5)
         elif SG in algo and 18 not in runs: # plot set greedy only for long run
             continue
         else:
-            plt.plot(np.array(max_assignable_vehicles_list), m_values, color=col[ind], lw=2.0, label=algo)
+            plt.plot(np.array(max_assignable_vehicles_list), m_values, color=col[ind], lw=2.0, label=algo,marker='o', ms=8.0)
             #plt.errorbar(np.array(max_assignable_vehicles_list) + ind*offset, m_values, s_values, color=col(ind), fmt='o')
             ax.fill_between(np.array(max_assignable_vehicles_list), l_values, u_values, facecolor=col[ind], alpha=0.5)
 
@@ -175,7 +176,7 @@ for epsilon in epsilons:
             #fac = (1 - ((K-1)/K)**K)
             fac = 1 / math.e 
             bound =  m_values * (1-fac) + fac * hung_mean
-            plt.plot(np.array(max_assignable_vehicles_list), bound, color='k', lw=3.0, ls=':' ,label='bound')
+            plt.plot(np.array(max_assignable_vehicles_list), bound, color='k', lw=3.0, ls=':' ,label='bound',marker='o', ms=8.0)
 
         ind += 1
 
@@ -186,7 +187,9 @@ for epsilon in epsilons:
     elif 19 in runs:
         plt.ylim((0.6, 1.1))
 
-    plt. legend()
+    box = ax.get_position() 
+    ax.set_position([box.x0, box.y0, box.width * 0.5, box.height])
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     ax.grid(True)
     fig_filename = fig_fn_base + '_' + str(int(epsilon)) + '_curve.eps'
     plt.show(block=False)
