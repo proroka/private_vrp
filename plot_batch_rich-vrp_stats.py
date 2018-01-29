@@ -198,6 +198,7 @@ for epsilon in epsilons:
 
 
 
+
 # Close figures
 
 raw_input('Hit ENTER to close figure')
