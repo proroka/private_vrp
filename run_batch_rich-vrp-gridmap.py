@@ -20,13 +20,17 @@ BOUND_HUNGARIAN = 1
 #------------------------------------- 
 # Global settings
 
-run = 19
+run = 30
+
+# Uncertainty on locations
+noise_model = 'gauss' # {'gauss', 'laplace', 'uniform'}
+compute_slice = True
 
 # Iterations over vehicle/passenger distributions
-num_iter = 500
-compute_optimal = True
-include_set_greedy = True
-use_initial_hungarian = False
+num_iter = 100
+compute_optimal = False 
+include_set_greedy = False
+use_initial_hungarian = True
 
 # Save simulation data and figures
 filename = 'data/rich-vrp_batch_s' + str(run) + '.dat'
@@ -34,22 +38,33 @@ fig_fn_base = 'figures/rich-vrp_batch_s' + str(run)
 
 # Total number of cars and passengers
 if compute_optimal:
-    max_assignable_vehicles_list = [4, 6, 8, 10, 12] 
+    max_assignable_vehicles_list = [4, 6, 8, 10, 12, 14, 16] 
 else:
     max_assignable_vehicles_list = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 num_vehicles = max_assignable_vehicles_list[-1]
 num_passengers = max_assignable_vehicles_list[0]
+
+if compute_slice:
+    max_assignable_vehicles_list = [12]
+    num_vehicles = 16
+    num_passengers = 4
+
 
 grid_size = 16
 edge_length = 50.
 speed = 10.
 std = 2.0 # sigma on speeds
 
-# Uncertainty on locations
-noise_model = 'gauss' # {'gauss', 'laplace'}
-# Set noise parameter: scale 
-if noise_model == 'laplace': epsilons = [0.02] 
-elif noise_model == 'gauss': epsilons =  [100.0]  
+# To get a standard deviation of 100:
+# For Gaussian: epsilon = 100             (i.e., sigma)
+# For Laplace: epsilon = np.sqrt(3) / 100 (i.e., scale parameter)
+# For Uniform: epsilon = 2 * 100          (i.e., radius)
+if noise_model == 'laplace': epsilons = [np.sqrt(3) / 100.] 
+elif noise_model == 'gauss': epsilons =  [25., 50., 75., 100.0]  
+elif noise_model == 'uniform': epsilons = [2. * 100.]
+if compute_slice:
+    epsilons =  [25., 50., 75., 100.0, 125., 150., 175, 200.]  
+    epsilons = range(20,200,10)
 
 
 plot_on = True
@@ -211,7 +226,7 @@ if plot_hist:
 
 # Plot performance vs num vehicles
 plot_curve = True
-if plot_curve:
+if plot_curve and not compute_slice:
     
     col = ['b','r','g','m','c','y']
     fig = plt.figure(figsize=(6, 6), frameon=False)
@@ -249,7 +264,7 @@ if plot_curve:
     plt.show(block=False)
 
 # Plot cost vs num vehicles
-plot_sampled_curve = True
+plot_sampled_curve = False
 if plot_sampled_curve:
     
     col = ['b','r','g','m','c','y']

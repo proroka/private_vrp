@@ -194,8 +194,8 @@ plot_smooth_data(data[redundancy_main][TIME], data[redundancy_main][REDUNDANCY],
 plt.ylim([0., 4.])
 plt.legend()
 plt.tight_layout()
-# filename = 'figures/final_redundancy.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+filename = 'figures/final_redundancy.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 # Average waiting time over time slices.
 slices = 4  # hours
@@ -237,8 +237,8 @@ ax2.plot(x, y, '#777777', lw=2)
 ax2.fill_between(x, y, np.zeros_like(y), facecolor='#777777', alpha=0.5)
 ax2.set_ylabel('Number of requests per batch')
 plt.tight_layout()
-# filename = 'figures/final_waiting_times.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+filename = 'figures/final_waiting_times.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 # Density plots.
 import seaborn as sns
@@ -272,8 +272,8 @@ for ax, s in zip(axes[1], range(0, 24, slices)):
   ax.axes.get_xaxis().set_ticks([])
   ax.axes.get_yaxis().set_ticks([])
 plt.tight_layout()
-# filename = 'figures/final_density.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+filename = 'figures/final_density.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 # Occupied ratio.
 flatui = ["#222222"]
@@ -297,8 +297,8 @@ plt.ylabel('Waiting time')
 ax.legend(leg, order)
 plt.tight_layout()
 
-# filename = 'figures/final_occupied.eps'
-# plt.savefig(filename, format='eps', transparent=True, frameon=False)
+filename = 'figures/final_occupied.eps'
+plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 plt.show(block=False)
 

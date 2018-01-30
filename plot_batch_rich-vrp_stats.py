@@ -11,11 +11,15 @@ import math
 #-------------------------------------
 # Load data
 
+# Long runs: 18 (gauss), 23 (laplace), 26 (uniform)
+# Short with opt: 16, 17 (gauss), 24, 25 (laplace), 27, 28 (uniform)
+
 runs = [18] # run without optimal, 10 to 100 robots, 500 iter, 16x16 grid
-#runs = [16, 17] # runs with optimal, 4 to 16 robots, 250 iter each, 16x16 grid
+#runs = [27, 28] # runs with optimal, 4 to 16 robots, 250 iter each, 16x16 grid
 #runs = [19] # run where optimal is without initial assignment; 500 iter, 4 to 12 robots; 16x16 grid
 
 conf_int = True # return confidence interval or else std dev
+compare_slice = False
 
 # VRP algorithm variants
 TRUE = 'true'
@@ -70,16 +74,24 @@ def err(a):
 
 
 #col = get_cmap(len(epsilons)*6)
-if 18 in runs:
-    col = ['orange','green','g','m','b','c']
-elif 16 in runs:
-    col = ['r','g','g','m','b','c']
-elif 19 in runs:        
-    col = ['r','green','g','m','b','c']
-else:
-    col = ['r','green','g','m','b','c']
 
+if 16 in runs:
+    col = ['r','b','r','g','g']
+elif 24 in runs:
+    col = ['b','b','g','g','r']
+elif 27 in runs:
+    col = ['b','b','g','r','r']
+elif 18 in runs:
+    col = ['orange','blue','blue','m','green','c']
+elif 23 in runs: 
+    col = ['orange','b','orange','g','green','c']
+elif 26 in runs: 
+    col = ['orange','b','orange','g','green','c']
+
+elif compare_slice:
+    col = get_cmap(30)
 #col = ['r','purple','g','m','b','cyan']
+
 
 #-------------------------------------
 # Performance
@@ -130,7 +142,7 @@ for epsilon in epsilons:
                     if normalize:
                         true_uniform.append(np.mean(v) / hung_baseline[index, i])
                     else:
-                        true_uniform.extend(np.mean(v))
+                        true_uniform.append(np.mean(v))
 
             true_mean = np.mean(true_uniform)*np.ones(len(max_assignable_vehicles_list))
             true_lower, true_upper = err(true_uniform)
@@ -160,17 +172,23 @@ for epsilon in epsilons:
 
         if HUN in algo:
             plt.plot(np.array(max_assignable_vehicles_list), hung_mean, color='black', ls='--', lw=2.0, label=algo, marker='o', ms=8.0)
+
             #plt.errorbar(np.array(max_assignable_vehicles_list) + ind*offset, hung_mean, hung_std, color=col(ind), fmt='o')
         elif TRUE in algo:
             plt.plot(np.array(max_assignable_vehicles_list), true_mean, color='black', lw=2.0, label=algo,marker='o', ms=8.0)
             ax.fill_between(np.array(max_assignable_vehicles_list), true_lower, true_upper, facecolor='black', alpha=0.5)
-        elif SG in algo and 18 not in runs: # plot set greedy only for long run
+        elif SG in algo and ((16 in runs) or (25 in runs) or (28 in runs)): # plot set greedy only for long run
             continue
         else:
-            plt.plot(np.array(max_assignable_vehicles_list), m_values, color=col[ind], lw=2.0, label=algo,marker='o', ms=8.0)
-            #plt.errorbar(np.array(max_assignable_vehicles_list) + ind*offset, m_values, s_values, color=col(ind), fmt='o')
-            ax.fill_between(np.array(max_assignable_vehicles_list), l_values, u_values, facecolor=col[ind], alpha=0.5)
+            if not compare_slice:
+                plt.plot(np.array(max_assignable_vehicles_list), m_values, color=col[ind], lw=2.0, label=algo,marker='o', ms=8.0)
+                plt.plot(np.array(max_assignable_vehicles_list), m_values, color=col[ind], lw=2.0, label=algo,marker='o', ms=8.0)
 
+            else:
+                plt.plot(np.array(max_assignable_vehicles_list), m_values, color=col(ind), lw=2.0, label=algo,marker='o', ms=8.0)
+                plt.plot(np.array(max_assignable_vehicles_list), m_values, color=col(ind), lw=2.0, label=algo,marker='o', ms=8.0)
+
+            #plt.errorbar(np.array(max_assignable_vehicles_list) + ind*offset, m_values, s_values, color=col(ind), fmt='o')
         if OPT in algo:
             K = float(max_assignable_vehicles - num_passengers)
             #fac = (1 - ((K-1)/K)**K)
@@ -179,13 +197,13 @@ for epsilon in epsilons:
             plt.plot(np.array(max_assignable_vehicles_list), bound, color='k', lw=3.0, ls=':' ,label='bound',marker='o', ms=8.0)
 
         ind += 1
+        print ind
 
-    if 16 in runs:
-        plt.ylim((0.6, 1.05))
-    elif 18 in runs: 
+    if len(runs)>1 and normalize:
+        plt.ylim((0.68, 1.05))
+    elif len(runs)==1 and normalize: 
         plt.ylim((0.2, 1.1))
-    elif 19 in runs:
-        plt.ylim((0.6, 1.1))
+    
 
     box = ax.get_position() 
     ax.set_position([box.x0, box.y0, box.width * 0.5, box.height])
