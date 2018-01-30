@@ -17,7 +17,7 @@ BOUND_INF = 0
 BOUND_HUNGARIAN = 1
 
 
-#------------------------------------- 
+#-------------------------------------
 # Global settings
 
 run = 30
@@ -28,7 +28,7 @@ compute_slice = True
 
 # Iterations over vehicle/passenger distributions
 num_iter = 100
-compute_optimal = False 
+compute_optimal = True
 include_set_greedy = False
 use_initial_hungarian = True
 
@@ -38,14 +38,14 @@ fig_fn_base = 'figures/rich-vrp_batch_s' + str(run)
 
 # Total number of cars and passengers
 if compute_optimal:
-    max_assignable_vehicles_list = [4, 6, 8, 10, 12, 14, 16] 
+    max_assignable_vehicles_list = [4, 6, 8, 10, 12, 14, 16]
 else:
     max_assignable_vehicles_list = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 num_vehicles = max_assignable_vehicles_list[-1]
 num_passengers = max_assignable_vehicles_list[0]
 
 if compute_slice:
-    max_assignable_vehicles_list = [12]
+    max_assignable_vehicles_list = [10]
     num_vehicles = 16
     num_passengers = 4
 
@@ -59,12 +59,12 @@ std = 2.0 # sigma on speeds
 # For Gaussian: epsilon = 100             (i.e., sigma)
 # For Laplace: epsilon = np.sqrt(3) / 100 (i.e., scale parameter)
 # For Uniform: epsilon = 2 * 100          (i.e., radius)
-if noise_model == 'laplace': epsilons = [np.sqrt(3) / 100.] 
-elif noise_model == 'gauss': epsilons =  [25., 50., 75., 100.0]  
+if noise_model == 'laplace': epsilons = [np.sqrt(3) / 100.]
+elif noise_model == 'gauss': epsilons =  [25., 50., 75., 100.0]
 elif noise_model == 'uniform': epsilons = [2. * 100.]
 if compute_slice:
-    epsilons =  [25., 50., 75., 100.0, 125., 150., 175, 200.]  
-    epsilons = range(20,200,10)
+    # epsilons = range(20,200,10)
+    epsilons = [10, 20, 40, 60, 80, 120, 160, 240, 320]
 
 
 plot_on = True
@@ -107,7 +107,7 @@ SG = 'set-greedy'
 EG = 'element-greedy'
 HUN = 'hungarian'
 RAND = 'random'
-#waiting_time = collections.defaultdict(lambda: [])         
+#waiting_time = collections.defaultdict(lambda: [])
 waiting_time = collections.defaultdict(lambda: collections.defaultdict(list))
 costs = collections.defaultdict(lambda: collections.defaultdict(list))
 
@@ -143,14 +143,14 @@ for max_assignable_vehicles in max_assignable_vehicles_list:
         for epsilon in epsilons:
             # Generate noisy vehicle positions
             vehicle_node_pos = util_graph.GetNodePositions(graph, vehicle_node_ind)
-            _, vehicle_pos_noisy = util_noise.add_noise(vehicle_node_pos, nearest_neighbor_searcher, epsilon, noise_model)        
+            _, vehicle_pos_noisy = util_noise.add_noise(vehicle_node_pos, nearest_neighbor_searcher, epsilon, noise_model)
             # Generate noisy passenger positions
             passenger_node_pos = util_graph.GetNodePositions(graph, passenger_node_ind)
             _, passenger_pos_noisy = util_noise.add_noise(passenger_node_pos, nearest_neighbor_searcher, epsilon, noise_model)
 
             num_samples = 200
             route_length_samples = util_vrp.get_vehicle_sample_route_lengths(route_lengths, num_samples, vehicle_pos_noisy, passenger_node_ind, nearest_neighbor_searcher, epsilon, noise_model)
-            
+
             # Compute optimal allocation
             topt = time.time()
             if compute_optimal:
@@ -227,7 +227,7 @@ if plot_hist:
 # Plot performance vs num vehicles
 plot_curve = True
 if plot_curve and not compute_slice:
-    
+
     col = ['b','r','g','m','c','y']
     fig = plt.figure(figsize=(6, 6), frameon=False)
 
@@ -237,13 +237,13 @@ if plot_curve and not compute_slice:
         #    continue
         m_values = np.zeros((len(max_assignable_vehicles_list),))
         s_values = np.zeros((len(max_assignable_vehicles_list),))
-        
+
         for num_vehicles, w in w_dict.iteritems():
             # means over passengers per iter
             means = np.zeros(num_iter)
             for j in range(num_iter):
                 means[j] = np.mean(w[j])
-                
+
             index = np.where(np.array(max_assignable_vehicles_list)==num_vehicles)
             m_values[index] = np.mean(w)
             s_values[index] = np.std(means)
@@ -266,7 +266,7 @@ if plot_curve and not compute_slice:
 # Plot cost vs num vehicles
 plot_sampled_curve = False
 if plot_sampled_curve:
-    
+
     col = ['b','r','g','m','c','y']
     fig = plt.figure(figsize=(6, 6), frameon=False)
 
@@ -277,7 +277,7 @@ if plot_sampled_curve:
         #     continue
         m_values = np.zeros((len(max_assignable_vehicles_list),))
         s_values = np.zeros((len(max_assignable_vehicles_list),))
-        
+
         i_list = []
         for num_vehicles, w in w_dict.iteritems():
             index = np.where(np.array(max_assignable_vehicles_list)==num_vehicles)

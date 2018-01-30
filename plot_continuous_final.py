@@ -54,6 +54,8 @@ smoothing_window_stride = 5  # 10
 ignore_ride_distance = 300.
 ignore_ride_duration = 20
 
+plot_density_pickup = False
+
 
 TIME = 0
 AVAILABLE_TAXIS = 1
@@ -121,12 +123,14 @@ for i, (start_time, end_time, u, v) in enumerate(tqdm.tqdm(zip(
     if start_time >= max_timestamp: break
     if end_time - start_time < ignore_ride_duration: continue
     # Ignore crazy nodes (or rides outside manhattan).
-    u_node, du = nearest_neighbor_searcher.Search(u)
-    if du > ignore_ride_distance:
-        continue
-    v_node, dv = nearest_neighbor_searcher.Search(v)
-    if dv > ignore_ride_distance:
-        continue
+    if plot_density_pickup:
+      # More precise but slow.
+      u_node, du = nearest_neighbor_searcher.Search(u)
+      if du > ignore_ride_distance:
+          continue
+      v_node, dv = nearest_neighbor_searcher.Search(v)
+      if dv > ignore_ride_distance:
+          continue
 
     # Process simultaneuous requests.
     if not requests_time:
@@ -229,12 +233,14 @@ ax1.set_ylim(bottom=0)
 ax1.set_xlabel('Time')
 ax1.set_ylabel('Waiting time')
 ax1.yaxis.grid()
-ax1.set_xlim(-0.2, n - 1 + (len(order) * width) / 2. + 0.2)
+ax1.set_xlim(-0.2, n - 1 + (len(order) * width) + 0.2)
 x, y, sy = smooth_plot(requests_time, num_simultaneuous_requests, window=int(smoothing_window_mins * 60. / batching_duration), stride=int(60. * smoothing_window_stride / batching_duration))
 xlim = ax1.get_xlim()
 x = (x - min_timestamp) / (max_timestamp - min_timestamp) * (xlim[1] - xlim[0]) + xlim[0]
 ax2.plot(x, y, '#777777', lw=2)
 ax2.fill_between(x, y, np.zeros_like(y), facecolor='#777777', alpha=0.5)
+ax2.set_xlim(xlim)
+ax2.set_ylim(bottom=0)
 ax2.set_ylabel('Number of requests per batch')
 plt.tight_layout()
 filename = 'figures/final_waiting_times.eps'
@@ -243,37 +249,38 @@ plt.savefig(filename, format='eps', transparent=True, frameon=False)
 # Density plots.
 import seaborn as sns
 sns.reset_orig()
-agg_over_hours = 1
-f, axes = plt.subplots(2, n, sharex=True, sharey=True, figsize=(2 * n, 2 * 2))
-for ax, s in zip(axes[0], range(0, 24, slices)):
-  current_t = s * 60 * 60 + min_timestamp
-  flatten_xy = []
-  for t, xy in zip(requests_time, request_pxy):
-    if t >= current_t and t < current_t + agg_over_hours * 60 * 60:
-      flatten_xy.extend(xy)
-  flatten_xy = np.array(flatten_xy)
-  sns.kdeplot(flatten_xy[:,0], flatten_xy[:,1], cmap='Reds', shade=True, shade_lowest=False, ax=ax)
-  ax.axis('equal')
-  ax.set_xlim((581855, 590292))
-  ax.set_ylim((4505860, 4518520))
-  ax.axes.get_xaxis().set_ticks([])
-  ax.axes.get_yaxis().set_ticks([])
-for ax, s in zip(axes[1], range(0, 24, slices)):
-  current_t = s * 60 * 60 + min_timestamp
-  flatten_xy = []
-  for t, xy in zip(requests_time, request_dxy):
-    if t >= current_t and t < current_t + agg_over_hours * 60 * 60:
-      flatten_xy.extend(xy)
-  flatten_xy = np.array(flatten_xy)
-  sns.kdeplot(flatten_xy[:,0], flatten_xy[:,1], cmap='Blues', shade=True, shade_lowest=False, ax=ax)
-  ax.axis('equal')
-  ax.set_xlim((581855, 590292))
-  ax.set_ylim((4505860, 4518520))
-  ax.axes.get_xaxis().set_ticks([])
-  ax.axes.get_yaxis().set_ticks([])
-plt.tight_layout()
-filename = 'figures/final_density.eps'
-plt.savefig(filename, format='eps', transparent=True, frameon=False)
+if plot_density_pickup:
+  agg_over_hours = 1
+  f, axes = plt.subplots(2, n, sharex=True, sharey=True, figsize=(2 * n, 2 * 2))
+  for ax, s in zip(axes[0], range(0, 24, slices)):
+    current_t = s * 60 * 60 + min_timestamp
+    flatten_xy = []
+    for t, xy in zip(requests_time, request_pxy):
+      if t >= current_t and t < current_t + agg_over_hours * 60 * 60:
+        flatten_xy.extend(xy)
+    flatten_xy = np.array(flatten_xy)
+    sns.kdeplot(flatten_xy[:,0], flatten_xy[:,1], cmap='Reds', shade=True, shade_lowest=False, ax=ax)
+    ax.axis('equal')
+    ax.set_xlim((581855, 590292))
+    ax.set_ylim((4505860, 4518520))
+    ax.axes.get_xaxis().set_ticks([])
+    ax.axes.get_yaxis().set_ticks([])
+  for ax, s in zip(axes[1], range(0, 24, slices)):
+    current_t = s * 60 * 60 + min_timestamp
+    flatten_xy = []
+    for t, xy in zip(requests_time, request_dxy):
+      if t >= current_t and t < current_t + agg_over_hours * 60 * 60:
+        flatten_xy.extend(xy)
+    flatten_xy = np.array(flatten_xy)
+    sns.kdeplot(flatten_xy[:,0], flatten_xy[:,1], cmap='Blues', shade=True, shade_lowest=False, ax=ax)
+    ax.axis('equal')
+    ax.set_xlim((581855, 590292))
+    ax.set_ylim((4505860, 4518520))
+    ax.axes.get_xaxis().set_ticks([])
+    ax.axes.get_yaxis().set_ticks([])
+  plt.tight_layout()
+  filename = 'figures/final_density.eps'
+  plt.savefig(filename, format='eps', transparent=True, frameon=False)
 
 # Occupied ratio.
 flatui = ["#222222"]

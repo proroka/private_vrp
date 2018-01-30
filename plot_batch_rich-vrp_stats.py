@@ -58,7 +58,7 @@ for r in range(0,len(runs)):
 
 # Get colors
 def get_cmap(n, name='hsv'):
-    '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
+    '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct
     RGB color; the keyword argument name must be a standard mpl colormap name.'''
     return plt.cm.get_cmap(name, n)
 
@@ -83,9 +83,9 @@ elif 27 in runs:
     col = ['b','b','g','r','r']
 elif 18 in runs:
     col = ['orange','blue','blue','m','green','c']
-elif 23 in runs: 
+elif 23 in runs:
     col = ['orange','b','orange','g','green','c']
-elif 26 in runs: 
+elif 26 in runs:
     col = ['orange','b','orange','g','green','c']
 
 elif compare_slice:
@@ -110,14 +110,14 @@ for epsilon in epsilons:
 
     if res == 0: items = waiting_time
     elif res == 1: items = sampled_cost
-    
+
     hung_baseline = np.zeros((len(max_assignable_vehicles_list), num_iter))
     # Compute Hungarian value as offset for bound
     for algo, w_dict in items.iteritems():
         if HUN in algo:
-            if str(int(epsilon)) not in algo:
+            if not algo.endswith('_' + str(int(epsilon))):
                 continue
-            
+
             hung_uniform = []
             for max_assignable_vehicles, w in w_dict.iteritems():
                 index = np.where(np.array(max_assignable_vehicles_list)==max_assignable_vehicles)
@@ -166,7 +166,7 @@ for epsilon in epsilons:
             for j in range(num_iter):
                 means[j] = np.mean(w[j])
                 if normalize:
-                    means[j] /= hung_baseline[index, j]                
+                    means[j] /= hung_baseline[index, j]
             m_values[index] = np.mean(means)
             l_values[index], u_values[index] = err(means)
 
@@ -192,7 +192,7 @@ for epsilon in epsilons:
         if OPT in algo:
             K = float(max_assignable_vehicles - num_passengers)
             #fac = (1 - ((K-1)/K)**K)
-            fac = 1 / math.e 
+            fac = 1 / math.e
             bound =  m_values * (1-fac) + fac * hung_mean
             plt.plot(np.array(max_assignable_vehicles_list), bound, color='k', lw=3.0, ls=':' ,label='bound',marker='o', ms=8.0)
 
@@ -201,11 +201,11 @@ for epsilon in epsilons:
 
     if len(runs)>1 and normalize:
         plt.ylim((0.68, 1.05))
-    elif len(runs)==1 and normalize: 
+    elif len(runs)==1 and normalize:
         plt.ylim((0.2, 1.1))
-    
 
-    box = ax.get_position() 
+
+    box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.5, box.height])
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     ax.grid(True)

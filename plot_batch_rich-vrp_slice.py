@@ -14,6 +14,7 @@ import math
 runs = [30]
 
 conf_int = True # return confidence interval or else std dev
+normalize = False
 
 
 # VRP algorithm variants
@@ -53,7 +54,7 @@ for r in range(0,len(runs)):
 
 # Get colors
 def get_cmap(n, name='hsv'):
-    '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
+    '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct
     RGB color; the keyword argument name must be a standard mpl colormap name.'''
     return plt.cm.get_cmap(name, n)
 
@@ -68,58 +69,67 @@ def err(a):
         return m - s, m + s
 
 
+col = {
+  TRUE: 'black',
+  OPT: 'red',
+  SG: 'orange',
+  EG: 'green',
+  HUN: 'black',
+  RAND: 'blue',
+}
+
 
 #-------------------------------------
 # Performance
 
+algorithms = sorted(list(set([a.rsplit('_', 1)[0] for a in waiting_time])))
+epsilons = sorted(list(set([float(a.rsplit('_', 1)[1]) for a in waiting_time if not a.startswith(TRUE)])))
+max_assignable_vehicles = waiting_time.values()[0].keys()[0]
+
 fig = plt.figure(figsize=(10, 5), frameon=False)
 ax = plt.gca()
 
-for epsilon in epsilons:
-    print 'Epsilon: ', epsilon
+mean_values = {}
+for algo in algorithms:
+  mean_values[algo] = []
+  lower_values = []
+  upper_values = []
 
-    items = waiting_time
+  for epsilon in epsilons:
+    reference = '%s_%g' % (HUN, epsilon)
+    if algo == TRUE:
+      current = algo
+    else:
+      current = '%s_%g' % (algo, epsilon)
 
-    for algo, w_dict in items.iteritems():
-        if str(int(epsilon)) not in algo:
-            continue
+    values = []
+    for wb, w in zip(waiting_time[reference][max_assignable_vehicles], waiting_time[current][max_assignable_vehicles]):
+      baseline = np.mean(wb)
+      if normalize:
+        values.append(np.mean(w) / baseline)
+      else:
+        values.append(np.mean(w))
+    mean_values[algo].append(np.mean(values))
+    l, u = err(values)
+    lower_values.append(l)
+    upper_values.append(u)
 
-        m_values = np.zeros((len(max_assignable_vehicles_list),))
-        l_values = np.zeros((len(max_assignable_vehicles_list),))
-        u_values = np.zeros((len(max_assignable_vehicles_list),))
+  print algo, col[algo]
+  plt.plot(epsilons, mean_values[algo], '--' if algo == HUN else '-', color=col[algo], lw=2.0, label=algo, marker='o', ms=8.0)
+  ax.fill_between(epsilons, lower_values, upper_values, facecolor=col[algo], alpha=0.5)
 
-
-        for max_assignable_vehicles, w in w_dict.iteritems():
-            # means over passengers per iter
-            index = np.where(np.array(max_assignable_vehicles_list)==max_assignable_vehicles)
-            means = np.zeros(num_iter)
-            for j in range(num_iter):
-                means[j] = np.mean(w[j])
-              
-            m_values[index] = np.mean(means)
-            l_values[index], u_values[index] = err(means)
-
-
-        #yerr = [m_values[0]-l_values[0], m_values[0]+u_values[0]]
-        yerr = []
-        yerr.append(m_values.flatten() - l_values.flatten())
-        yerr.append(m_values.flatten() + u_values.flatten())
-
-        if HUN in algo:
-            ax.bar(epsilon-3, m_values,width=5.,color='b',align='center')
-            #plt.errorbar(epsilon-3, m_values, yerr)
-        
-        elif EG in algo:
-            ax.bar(epsilon+3, m_values,width=5.,color='g',align='center')
-            #plt.errorbar(epsilon+3, m_values, yerr=yerr, 'k')
+# Add bound if we can.
+if OPT in mean_values and HUN in mean_values:
+  fac = 1. / np.e
+  values = (1. - fac) * mean_values[OPT] + (fac) * mean_values[HUN]
+  plt.plot(epsilons, values, ':', color='black', lw=2.0, label='Bound', marker='o', ms=8.0)
 
 
-ax.bar(epsilon-3, 1, width=5.,color='b',align='center',label='Hungarian')
-ax.bar(epsilon+3, 1 ,width=5.,color='g',align='center', label='Greedy')
-plt.legend()
-
+box = ax.get_position()
+ax.set_position([box.x0, box.y0, box.width * 0.5, box.height])
+plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 ax.grid(True)
-plt.xticks(epsilons)
+
 fig_filename = fig_fn_base + '_' + str(int(epsilon)) + '_curve.eps'
 plt.show(block=False)
 
