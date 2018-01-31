@@ -20,7 +20,7 @@ BOUND_HUNGARIAN = 1
 #-------------------------------------
 # Global settings
 
-run = 31
+run = 32
 
 # Uncertainty on locations
 noise_model = 'gauss' # {'gauss', 'laplace', 'uniform'}
@@ -28,8 +28,8 @@ compute_slice = True
 
 # Iterations over vehicle/passenger distributions
 num_iter = 100
-compute_optimal = False
-include_set_greedy = True
+compute_optimal = True
+include_set_greedy = False
 use_initial_hungarian = True
 
 # Save simulation data and figures
