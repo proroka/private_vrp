@@ -11,7 +11,7 @@ import math
 #-------------------------------------
 # Load data
 
-runs = [30]
+runs = [31]
 
 conf_int = True # return confidence interval or else std dev
 normalize = False
@@ -114,14 +114,15 @@ for algo in algorithms:
     lower_values.append(l)
     upper_values.append(u)
 
-  print algo, col[algo]
+  #print algo, col[algo]
   plt.plot(epsilons, mean_values[algo], '--' if algo == HUN else '-', color=col[algo], lw=2.0, label=algo, marker='o', ms=8.0)
   ax.fill_between(epsilons, lower_values, upper_values, facecolor=col[algo], alpha=0.5)
+
 
 # Add bound if we can.
 if OPT in mean_values and HUN in mean_values:
   fac = 1. / np.e
-  values = (1. - fac) * mean_values[OPT] + (fac) * mean_values[HUN]
+  values = (1. - fac) * np.array(mean_values[OPT]) + (fac) * np.array(mean_values[HUN])
   plt.plot(epsilons, values, ':', color='black', lw=2.0, label='Bound', marker='o', ms=8.0)
 
 

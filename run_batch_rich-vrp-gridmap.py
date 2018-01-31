@@ -20,7 +20,7 @@ BOUND_HUNGARIAN = 1
 #-------------------------------------
 # Global settings
 
-run = 30
+run = 31
 
 # Uncertainty on locations
 noise_model = 'gauss' # {'gauss', 'laplace', 'uniform'}
@@ -28,8 +28,8 @@ compute_slice = True
 
 # Iterations over vehicle/passenger distributions
 num_iter = 100
-compute_optimal = True
-include_set_greedy = False
+compute_optimal = False
+include_set_greedy = True
 use_initial_hungarian = True
 
 # Save simulation data and figures
@@ -45,9 +45,14 @@ num_vehicles = max_assignable_vehicles_list[-1]
 num_passengers = max_assignable_vehicles_list[0]
 
 if compute_slice:
-    max_assignable_vehicles_list = [10]
-    num_vehicles = 16
-    num_passengers = 4
+    if compute_optimal:
+        max_assignable_vehicles_list = [8]
+        num_vehicles = 16
+        num_passengers = 4
+    else:
+        max_assignable_vehicles_list = [50]
+        num_vehicles = 100
+        num_passengers = 10
 
 
 grid_size = 16
@@ -63,7 +68,6 @@ if noise_model == 'laplace': epsilons = [np.sqrt(3) / 100.]
 elif noise_model == 'gauss': epsilons =  [25., 50., 75., 100.0]
 elif noise_model == 'uniform': epsilons = [2. * 100.]
 if compute_slice:
-    # epsilons = range(20,200,10)
     epsilons = [10, 20, 40, 60, 80, 120, 160, 240, 320]
 
 
