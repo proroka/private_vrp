@@ -1,4 +1,5 @@
 # Standard modules
+import collections
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -13,6 +14,7 @@ import math
 
 runs = [30,35,36,37,38] # compute_optimal -- 40, 41 for 640
 runs = [39] # without opt
+runs = [32, 33]
 
 conf_int = True # return confidence interval or else std dev
 normalize = True
@@ -26,7 +28,7 @@ EG = 'element-greedy'
 HUN = 'hungarian'
 RAND = 'random'
 
-waiting_time = None
+waiting_time = collections.defaultdict(lambda: collections.defaultdict(list))
 num_iter = 0
 for r in range(0,len(runs)):
     run = runs[r]
@@ -44,13 +46,10 @@ for r in range(0,len(runs)):
         sampled_cost = data['sampled_cost']
 
         num_iter += data['num_iter']
-        if waiting_time is None:
-            waiting_time = data['waiting_time']
-        else:
-            for algo, w_dict in data['waiting_time'].iteritems():
-                for max_assignable_vehicles, w in w_dict.iteritems():
-                    waiting_time[algo][max_assignable_vehicles].extend(w)
-                    assert len(waiting_time[algo][max_assignable_vehicles]) == num_iter
+        for algo, w_dict in data['waiting_time'].iteritems():
+            for max_assignable_vehicles, w in w_dict.iteritems():
+                waiting_time[algo][max_assignable_vehicles].extend(w)
+                assert len(waiting_time[algo][max_assignable_vehicles]) == num_iter
 
 
 # Get colors
