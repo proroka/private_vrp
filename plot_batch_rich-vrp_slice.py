@@ -12,7 +12,7 @@ import math
 # Load data
 
 runs = [30,35,36,37,38] # compute_optimal -- 40, 41 for 640
-#runs = [39] # without opt
+runs = [39] # without opt
 
 conf_int = True # return confidence interval or else std dev
 normalize = True
