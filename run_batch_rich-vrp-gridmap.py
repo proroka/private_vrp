@@ -20,14 +20,14 @@ BOUND_HUNGARIAN = 1
 #-------------------------------------
 # Global settings
 
-run = 32
+run = 41
 
 # Uncertainty on locations
 noise_model = 'gauss' # {'gauss', 'laplace', 'uniform'}
 compute_slice = True
 
 # Iterations over vehicle/passenger distributions
-num_iter = 100
+num_iter = 250
 compute_optimal = True
 include_set_greedy = False
 use_initial_hungarian = True
@@ -68,7 +68,8 @@ if noise_model == 'laplace': epsilons = [np.sqrt(3) / 100.]
 elif noise_model == 'gauss': epsilons =  [25., 50., 75., 100.0]
 elif noise_model == 'uniform': epsilons = [2. * 100.]
 if compute_slice:
-    epsilons = [10, 20, 40, 60, 80, 120, 160, 240, 320]
+    #epsilons = [10, 20, 40, 60, 80, 120, 160, 240, 320, 640]
+    epsilons = [640]
 
 
 plot_on = True

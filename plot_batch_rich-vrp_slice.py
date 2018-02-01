@@ -11,10 +11,11 @@ import math
 #-------------------------------------
 # Load data
 
-runs = [32]
+runs = [30,35,36,37,38] # compute_optimal -- 40, 41 for 640
+#runs = [39] # without opt
 
 conf_int = True # return confidence interval or else std dev
-normalize = False
+normalize = True
 
 
 # VRP algorithm variants
